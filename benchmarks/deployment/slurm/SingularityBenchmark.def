@@ -1,7 +1,7 @@
 Bootstrap: docker-daemon
 From: vllm:latest
 %files
-    ./benchmarks/lora/deployment/slurm/additional-requirements-benchmark.txt /additional-requirements-benchmark.txt
+    ./benchmarks/deployment/slurm/additional-requirements-benchmark.txt /additional-requirements-benchmark.txt
 
 %post
     export DEBIAN_FRONTEND=noninteractive
