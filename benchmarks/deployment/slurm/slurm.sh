@@ -8,4 +8,4 @@
 #SBATCH --gres gpu:1
 #SBATCH --time=${EXP_MAX_DURATION_SECONDS}
 module load singularity
-singularity exec --nv --env PYTHONPATH=. vllm-benchmark-default.sif python3 ${EXP_BENCHMARK_EXECUTABLE} ${EXP_ARGS}
+singularity exec --nv --env PYTHONPATH=. ${EXP_CONTAINER_IMAGE} python3 ${EXP_BENCHMARK_EXECUTABLE} ${EXP_ARGS}

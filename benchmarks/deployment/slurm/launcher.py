@@ -18,7 +18,10 @@ EXP_CONTAINER_CODE_DIR = '/usr/local/lib/python3.10/dist-packages'
 EXP_SLURM_EXECUTABLE = 'benchmarks/deployment/slurm/slurm.sh'
 
 # path to benchmark executable
-EXP_BENCHMARK_EXECUTABLE = 'benchmarks/benchmark_serving.py'
+EXP_BENCHMARK_EXECUTABLE = 'benchmarks/benchmark_serving_with_metrics.py'
+
+# path to container image
+EXP_CONTAINER_IMAGE = '/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/images/vllm-benchmark-default.sif'
 
 # parameters that cannot be modified (it could make the Job stop working)
 ILLEGAL_PARAMETERS = {
@@ -43,7 +46,7 @@ def schedule_job(
     slurm_executable: str,
     no_effect: bool
 ) -> None:
-    global EXP_HOME_CODE_DIR, EXP_CONTAINER_CODE_DIR, EXP_SLURM_EXECUTABLE
+    global EXP_HOME_CODE_DIR, EXP_CONTAINER_CODE_DIR, EXP_SLURM_EXECUTABLE, EXP_CONTAINER_IMAGE
 
     exp_results_path = os.path.join(results_path, specific_name)
     os.makedirs(exp_results_path, exist_ok=True)
@@ -56,6 +59,7 @@ def schedule_job(
     env["EXP_HOME_CODE_DIR"] = os.path.abspath(EXP_HOME_CODE_DIR)
     env["EXP_CONTAINER_CODE_DIR"] = EXP_CONTAINER_CODE_DIR
     env["EXP_BENCHMARK_EXECUTABLE"] = benchmark_executable
+    env["EXP_CONTAINER_IMAGE"] = EXP_CONTAINER_IMAGE
 
     command = f'cat {slurm_executable} | envsubst > {exp_results_path}/launcher.sh'
     subprocess.run(command, env=env, shell=True)
