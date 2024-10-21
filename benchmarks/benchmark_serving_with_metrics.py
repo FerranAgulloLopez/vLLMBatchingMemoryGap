@@ -565,7 +565,6 @@ async def benchmark(
         "request_throughput": metrics.request_throughput,
         "output_throughput": metrics.output_throughput,
         "total_token_throughput": metrics.total_token_throughput,
-        "output_lens": actual_output_lens,
     }
 
     def process_one_metric(

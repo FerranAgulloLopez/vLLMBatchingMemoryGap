@@ -1,0 +1,10 @@
+load SINGULARITY/3.11.5 (PATH)
+/home/bsc/bsc098069/llm_benchmarking/FairnessInLLMAdapterServing/vllm/connections.py:8: RuntimeWarning: Failed to read commit hash:
+No module named 'vllm._version'
+  from vllm.version import __version__ as VLLM_VERSION
+Traceback (most recent call last):
+  File "/home/bsc/bsc098069/llm_benchmarking/FairnessInLLMAdapterServing/benchmarks/benchmark_serving_with_metrics.py", line 1074, in <module>
+    main(args)
+  File "/home/bsc/bsc098069/llm_benchmarking/FairnessInLLMAdapterServing/benchmarks/benchmark_serving_with_metrics.py", line 733, in main
+    raise Exception("Server did not start on time")
+Exception: Server did not start on time
