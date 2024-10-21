@@ -205,17 +205,6 @@ def plot_results_together_batch(
             label=f'{label}'
         )
 
-        '''x_final_point = x_line[-1] + (x_line[-1] - x_line[-2])
-        y_final_point = y_line[-1] + (y_line[-1] - y_line[-2])
-        axs[index_x].plot(
-            x_line[-1:] + [x_final_point],
-            y_line[-1:] + [y_final_point],
-            marker='x',
-            markevery=[1],
-            linestyle='dotted',
-            color=line[0].get_color()
-        )'''
-
         axs.set_xlabel('maximum batch size')
         axs.legend(loc='upper right', fontsize=12)
         axs.set_ylabel('output tokens p/s', fontsize=10)
@@ -223,16 +212,73 @@ def plot_results_together_batch(
     plt.savefig(os.path.join(path, f'S_{title}'), bbox_inches='tight')
 
 
+def plot_results_together_batch_memory(
+        S_results_mean_memory: Dict[str, Dict[float, float]],
+        S_results_mean_batch: Dict[str, Dict[int, float]],
+        S_results_p25_memory: Dict[str, Dict[float, float]],
+        S_results_p25_batch: Dict[str, Dict[int, float]],
+        S_results_p75_memory: Dict[str, Dict[float, float]],
+        S_results_p75_batch: Dict[str, Dict[int, float]],
+        metric_to_show: str,
+        path: str,
+        title: str,
+) -> None:
+    def __prepare_lines(results: Dict[str, Dict[int, float]]) -> Dict[str, Tuple[List[int], List[float]]]:
+        output: Dict[str, Tuple[List[int], List[float]]] = {}
+        for metric, metric_results in results.items():
+            available_memory = [adapters for adapters, metric_value in metric_results.items() if metric_value is not None]
+            adapter_metrics = [metric_value for adapters, metric_value in metric_results.items() if metric_value is not None]
+            adapter_metrics = [x for _, x in sorted(zip(available_memory, adapter_metrics))]
+            available_memory.sort()
+            output[metric] = (available_memory, adapter_metrics)
+        return output
+
+    S_results_p25_memory = __prepare_lines(S_results_p25_memory)
+    S_results_p25_batch = __prepare_lines(S_results_p25_batch)
+    S_results_mean_memory = __prepare_lines(S_results_mean_memory)
+    S_results_mean_batch = __prepare_lines(S_results_mean_batch)
+    S_results_p75_memory = __prepare_lines(S_results_p75_memory)
+    S_results_p75_batch = __prepare_lines(S_results_p75_batch)
+
+    values_to_show: List[str, dict] = [
+        ('small request length', S_results_p25_memory, S_results_p25_batch),
+        ('medium request length', S_results_mean_memory, S_results_mean_batch),
+        ('large request length', S_results_p75_memory, S_results_p75_batch)
+    ]
+
+    fig, axs = plt.subplots(1, 1, figsize=(1 * 5, 1 * 3), sharex=True)
+    params = {'mathtext.default': 'regular'}
+    plt.rcParams.update(params)
+
+    for index_y, (label, values_S_memory, values_S_batch) in enumerate(values_to_show):
+        x_line = values_S_batch[metric_to_show][0]
+        y_line = values_S_memory[metric_to_show][0]
+        line = axs.plot(
+            x_line,
+            y_line,
+            marker='o',
+            linestyle='solid',
+            label=f'{label}'
+        )
+
+        axs.set_xlabel('maximum batch size')
+        axs.legend(loc='upper right', fontsize=12)
+        axs.set_ylabel('KV Cache (GB)', fontsize=10)
+
+    plt.savefig(os.path.join(path, f'S_{title}'), bbox_inches='tight')
+
+
 def main():
-    S_results_mean: Dict[str, Dict[float, float]] = extract_results('llama-2-7b/mean_dataset')
-    S_results_p25: Dict[str, Dict[float, float]] = extract_results('llama-2-7b/p25_dataset')
-    S_results_p75: Dict[str, Dict[float, float]] = extract_results('llama-2-7b/p75_dataset')
-    plot_results_together(S_results_mean, S_results_p25, S_results_p75, ['throughput'], '.', 'default_throughput')
-    plot_results_together(S_results_mean, S_results_p25, S_results_p75, ['mean_itl', 'median_itl'], '.', 'default_itl')
-    S_results_mean: Dict[str, Dict[int, float]] = extract_results_batch('llama-2-7b/mean_dataset')
-    S_results_p25: Dict[str, Dict[int, float]] = extract_results_batch('llama-2-7b/p25_dataset')
-    S_results_p75: Dict[str, Dict[int, float]] = extract_results_batch('llama-2-7b/p75_dataset')
-    plot_results_together_batch(S_results_mean, S_results_p25, S_results_p75, 'throughput', '.', 'default_throughput_batch')
+    S_results_mean_memory: Dict[str, Dict[float, float]] = extract_results('llama-2-7b/mean_dataset')
+    S_results_p25_memory: Dict[str, Dict[float, float]] = extract_results('llama-2-7b/p25_dataset')
+    S_results_p75_memory: Dict[str, Dict[float, float]] = extract_results('llama-2-7b/p75_dataset')
+    plot_results_together(S_results_mean_memory, S_results_p25_memory, S_results_p75_memory, ['throughput'], '.', 'default_throughput')
+    plot_results_together(S_results_mean_memory, S_results_p25_memory, S_results_p75_memory, ['mean_itl', 'median_itl'], '.', 'default_itl')
+    S_results_mean_batch: Dict[str, Dict[int, float]] = extract_results_batch('llama-2-7b/mean_dataset')
+    S_results_p25_batch: Dict[str, Dict[int, float]] = extract_results_batch('llama-2-7b/p25_dataset')
+    S_results_p75_batch: Dict[str, Dict[int, float]] = extract_results_batch('llama-2-7b/p75_dataset')
+    plot_results_together_batch(S_results_mean_batch, S_results_p25_batch, S_results_p75_batch, 'throughput', '.', 'default_throughput_batch')
+    plot_results_together_batch_memory(S_results_mean_memory, S_results_mean_batch, S_results_p25_memory, S_results_p25_batch, S_results_p75_memory, S_results_p75_batch, 'throughput', '.', 'default_throughput_batch_memory')
 
 
 if __name__ == '__main__':
