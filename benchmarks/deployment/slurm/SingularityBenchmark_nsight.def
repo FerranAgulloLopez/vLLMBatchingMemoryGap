@@ -1,0 +1,21 @@
+Bootstrap: docker-daemon
+From: vllm:latest
+%files
+    ./benchmarks/deployment/slurm/additional-requirements-benchmark.txt /additional-requirements-benchmark.txt
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install python packages
+    python3 -m pip install -r /additional-requirements-benchmark.txt
+
+    # Install Nsight
+    apt update
+    apt install -y --no-install-recommends gnupg
+    echo "deb http://developer.download.nvidia.com/devtools/repos/ubuntu$(. /etc/lsb-release; echo "$DISTRIB_RELEASE" | tr -d .)/$(dpkg --print-architecture) /" | tee /etc/apt/sources.list.d/nvidia-devtools.list
+    apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
+    apt update
+    apt install -y nsight-systems-cli
+
+    # Clean
+    rm /additional-requirements-benchmark.txt
