@@ -292,9 +292,11 @@ class _AsyncLLMEngine(LLMEngine):
         if not self._has_remaining_steps(seq_group_metadata_list):
 
             # Schedule iteration
+            init_time: float = time.perf_counter()
             (seq_group_metadata_list, scheduler_outputs,
              allow_async_output_proc
              ) = self.scheduler[virtual_engine].schedule()
+            self.scheduler_total_time += time.perf_counter() - init_time
 
             ctx.seq_group_metadata_list = seq_group_metadata_list
             ctx.scheduler_outputs = scheduler_outputs
@@ -343,8 +345,10 @@ class _AsyncLLMEngine(LLMEngine):
                     virtual_engine]
 
             # Execute the model.
+            init_time: float = time.perf_counter()
             outputs = await self.model_executor.execute_model_async(
                 execute_model_req)
+            self.model_forward_total_time += time.perf_counter() - init_time
 
             # we need to do this here so that last step's sampled_token_ids can
             # be passed to the next iteration for PP.
