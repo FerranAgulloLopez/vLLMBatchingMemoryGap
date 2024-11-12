@@ -12,7 +12,7 @@ import os
 
 # path to root code directory in host and container
 EXP_HOME_CODE_DIR = os.getenv('EXP_HOME_CODE_DIR', '.')
-EXP_CONTAINER_CODE_DIR = os.getenv('EXP_CONTAINER_CODE_DIR', '/usr/local/lib/python3.10/dist-packages')
+EXP_CONTAINER_CODE_DIR = os.getenv('EXP_CONTAINER_CODE_DIR', '/usr/local/lib/python3.12/dist-packages')
 
 # path to Slurm executable
 EXP_SLURM_EXECUTABLE = os.getenv('EXP_SLURM_EXECUTABLE', 'benchmarks/deployment/slurm/slurm.sh')
