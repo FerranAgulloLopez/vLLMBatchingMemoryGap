@@ -11,17 +11,28 @@ import os
 
 
 # path to root code directory in host and container
-EXP_HOME_CODE_DIR = '.'
-EXP_CONTAINER_CODE_DIR = '/usr/local/lib/python3.10/dist-packages'
+EXP_HOME_CODE_DIR = os.getenv('EXP_HOME_CODE_DIR', '.')
+EXP_CONTAINER_CODE_DIR = os.getenv('EXP_CONTAINER_CODE_DIR', '/usr/local/lib/python3.12/dist-packages')
 
 # path to Slurm executable
-EXP_SLURM_EXECUTABLE = 'benchmarks/deployment/slurm/slurm.sh'
+EXP_SLURM_EXECUTABLE = os.getenv('EXP_SLURM_EXECUTABLE', 'benchmarks/deployment/slurm/slurm.sh')
 
 # path to benchmark executable
-EXP_BENCHMARK_EXECUTABLE = 'benchmarks/benchmark_serving_with_metrics.py'
+EXP_BENCHMARK_EXECUTABLE = os.getenv('EXP_BENCHMARK_EXECUTABLE', 'benchmarks/benchmark_serving_with_metrics.py')
 
 # path to container image
-EXP_CONTAINER_IMAGE = '/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/images/vllm-benchmark-default.sif'
+EXP_CONTAINER_IMAGE = os.getenv('EXP_CONTAINER_IMAGE')
+if EXP_CONTAINER_IMAGE is None:
+    raise ValueError('Environment variable EXP_CONTAINER_IMAGE not specified')
+
+# print ENV vars
+print('Environment variable values:')
+print('EXP_HOME_CODE_DIR:', EXP_HOME_CODE_DIR)
+print('EXP_CONTAINER_CODE_DIR:', EXP_CONTAINER_CODE_DIR)
+print('EXP_SLURM_EXECUTABLE:', EXP_SLURM_EXECUTABLE)
+print('EXP_BENCHMARK_EXECUTABLE:', EXP_BENCHMARK_EXECUTABLE)
+print('EXP_CONTAINER_IMAGE:', EXP_CONTAINER_IMAGE)
+print('\n\n')
 
 # parameters that cannot be modified (it could make the Job stop working)
 ILLEGAL_PARAMETERS = {
@@ -42,11 +53,15 @@ def schedule_job(
     arguments: str,
     exp_max_duration: str,
     exclusive: bool,
-    benchmark_executable: str,
-    slurm_executable: str,
     no_effect: bool
 ) -> None:
-    global EXP_HOME_CODE_DIR, EXP_CONTAINER_CODE_DIR, EXP_SLURM_EXECUTABLE, EXP_CONTAINER_IMAGE
+    global \
+        EXP_HOME_CODE_DIR, \
+        EXP_CONTAINER_CODE_DIR, \
+        EXP_SLURM_EXECUTABLE, \
+        EXP_CONTAINER_IMAGE, \
+        EXP_BENCHMARK_EXECUTABLE, \
+        EXP_SLURM_EXECUTABLE
 
     exp_results_path = os.path.join(results_path, specific_name)
     os.makedirs(exp_results_path, exist_ok=True)
@@ -58,10 +73,10 @@ def schedule_job(
     env["EXP_ARGS"] = arguments
     env["EXP_HOME_CODE_DIR"] = os.path.abspath(EXP_HOME_CODE_DIR)
     env["EXP_CONTAINER_CODE_DIR"] = EXP_CONTAINER_CODE_DIR
-    env["EXP_BENCHMARK_EXECUTABLE"] = benchmark_executable
+    env["EXP_BENCHMARK_EXECUTABLE"] = EXP_BENCHMARK_EXECUTABLE
     env["EXP_CONTAINER_IMAGE"] = EXP_CONTAINER_IMAGE
 
-    command = f'cat {slurm_executable} | envsubst > {exp_results_path}/launcher.sh'
+    command = f'cat {EXP_SLURM_EXECUTABLE} | envsubst > {exp_results_path}/launcher.sh'
     subprocess.run(command, env=env, shell=True)
 
     if exclusive:
@@ -100,8 +115,6 @@ def main(
         test_benchmark_args: dict,
         exp_max_duration: str,
         exclusive: bool,
-        benchmark_executable: str,
-        slurm_executable: str,
         no_effect: bool
 ) -> None:
     global ILLEGAL_PARAMETERS
@@ -138,8 +151,6 @@ def main(
                 arguments,
                 exp_max_duration,
                 exclusive,
-                benchmark_executable,
-                slurm_executable,
                 no_effect
             )
 
@@ -155,8 +166,6 @@ if __name__ == '__main__':
     parser.add_argument('--default-benchmark-args', type=str, help='Dictionary with the default benchmark args')
     parser.add_argument('--test-server-args', type=str, help='Dictionary with the vllm server args to test against')
     parser.add_argument('--test-benchmark-args', type=str, help='Dictionary with the benchmark args to test against')
-    parser.add_argument('--benchmark-executable', type=str, default=EXP_BENCHMARK_EXECUTABLE, help='Define the benchmark to run')
-    parser.add_argument('--slurm-executable', type=str, default=EXP_SLURM_EXECUTABLE, help='Define the slurm script to run')
     parser.add_argument('--no-effect', action='store_true', help='Do everything except the step of launching the experiment')
     args = parser.parse_args()
 
@@ -181,7 +190,5 @@ if __name__ == '__main__':
         test_benchmark_args,
         args.max_duration,
         args.exclusive,
-        args.benchmark_executable,
-        args.slurm_executable,
         args.no_effect
     )

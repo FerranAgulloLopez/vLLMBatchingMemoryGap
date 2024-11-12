@@ -28,6 +28,8 @@ class ConcurrentMetricsChecker(Process):
         signal.signal(signal.SIGTERM, self.__signal_term_handler)
 
         self.time = []
+        self.scheduler_total_time = []
+        self.model_forward_total_time = []
         self.gpu_cache_usage_perc = []
         self.num_running = []
         self.num_waiting = []
@@ -46,6 +48,20 @@ class ConcurrentMetricsChecker(Process):
             try:
                 self.time.append(time.perf_counter() - start_time)
                 metrics_response = requests.get(self.metrics_api_url).text
+
+                self.scheduler_total_time.append(
+                    find_prometheus_metric_value(
+                        f"scheduler_total_time",
+                        metrics_response
+                    )
+                )
+
+                self.model_forward_total_time.append(
+                    find_prometheus_metric_value(
+                        f"model_forward_total_time",
+                        metrics_response
+                    )
+                )
 
                 self.gpu_cache_usage_perc.append(
                     find_prometheus_metric_value(
@@ -110,6 +126,14 @@ class ConcurrentMetricsChecker(Process):
         np.save(
             os.path.join(self.output_path, f'time'),
             np.asarray(self.time)
+        )
+        np.save(
+            os.path.join(self.output_path, f'scheduler_total_time'),
+            np.asarray(self.scheduler_total_time)
+        )
+        np.save(
+            os.path.join(self.output_path, f'model_forward_total_time'),
+            np.asarray(self.model_forward_total_time)
         )
         np.save(
             os.path.join(self.output_path, f'gpu_cache_usage_perc'),

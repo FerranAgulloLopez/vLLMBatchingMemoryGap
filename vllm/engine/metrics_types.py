@@ -52,6 +52,10 @@ class Stats:
     n_requests: List[int]
     finished_reason_requests: List[str]
 
+    # Time counters
+    scheduler_total_time: float
+    model_forward_total_time: float
+
     spec_decode_metrics: Optional["SpecDecodeWorkerMetrics"] = None
 
 
