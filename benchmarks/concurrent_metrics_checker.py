@@ -35,19 +35,7 @@ GPU_METRICS_NVIDIA_SMI_DOM_SELECT = \
 
 GPU_METRICS_NVIDIA_SMI_DOM_GPM = \
     [
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-        '7',
-        '9',
-        '10',
-        '20',
-        '21',
-        '60',
-        '61'
+
     ]
 
 PROMETHEUS_METRICS = \
@@ -69,13 +57,19 @@ WRITING_RATIO = 20
 class ConcurrentMetricsChecker(Process):
 
     def __init__(self, output_path: str, metrics_api_url: str):
-        global GPU_METRICS_NVIDIA_SMI, GPU_METRICS_NVIDIA_SMI_DOM_SELECT
+        global GPU_METRICS_NVIDIA_SMI, GPU_METRICS_NVIDIA_SMI_DOM_SELECT, GPU_METRICS_NVIDIA_SMI_DOM_GPM
         super(ConcurrentMetricsChecker, self).__init__()
         self.output_path: str = output_path
         self.metrics_api_url: str = metrics_api_url
 
-        self.gpu_metrics_command_nvidia_smi: str = f'nvidia-smi --query-gpu={",".join(GPU_METRICS_NVIDIA_SMI)} --format=csv'
-        self.gpu_metrics_command_nvidia_smi_dom: str = f'nvidia-smi dmon --select={"".join(GPU_METRICS_NVIDIA_SMI_DOM_SELECT)} --gpm-metrics={",".join(GPU_METRICS_NVIDIA_SMI_DOM_GPM)} --count=1'
+        self.gpu_metrics_command_nvidia_smi: str = f'nvidia-smi --format=csv'
+        if len(GPU_METRICS_NVIDIA_SMI) > 0:
+            self.gpu_metrics_command_nvidia_smi += f' --query-gpu={",".join(GPU_METRICS_NVIDIA_SMI)}'
+        self.gpu_metrics_command_nvidia_smi_dom: str = f'nvidia-smi dmon --count=1'
+        if len(GPU_METRICS_NVIDIA_SMI_DOM_SELECT) > 0:
+            self.gpu_metrics_command_nvidia_smi_dom += f' --select={"".join(GPU_METRICS_NVIDIA_SMI_DOM_SELECT)}'
+        if len(GPU_METRICS_NVIDIA_SMI_DOM_GPM) > 0:
+            self.gpu_metrics_command_nvidia_smi_dom += f' --gpm-metrics={",".join(GPU_METRICS_NVIDIA_SMI_DOM_GPM)}'
 
         self.rows_to_write: Dict[str, Tuple[object, List[str]]] = {}
 
