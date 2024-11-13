@@ -20,8 +20,6 @@ GPU_METRICS_NVIDIA_SMI = \
         'memory.free',
         'utilization.gpu',
         'utilization.memory',
-        'temperature.gpu',
-        'temperature.memory'
     ]
 
 GPU_METRICS_NVIDIA_SMI_DOM_SELECT = \
@@ -30,7 +28,7 @@ GPU_METRICS_NVIDIA_SMI_DOM_SELECT = \
         'u',
         'c',
         'v',
-        't'
+        't',
     ]
 
 GPU_METRICS_NVIDIA_SMI_DOM_GPM = \
@@ -48,7 +46,7 @@ PROMETHEUS_METRICS = \
         'num_preemptions_total',
         'request_success_total',
         'prompt_tokens_total',
-        'generation_tokens_total'
+        'generation_tokens_total',
     ]
 
 WRITING_RATIO = 20
