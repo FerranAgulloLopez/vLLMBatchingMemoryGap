@@ -30,6 +30,7 @@ import io
 import json
 import os
 import random
+import signal
 import time
 import warnings
 import requests
@@ -391,10 +392,11 @@ def calculate_metrics(
 
 class Server:
 
-    def __init__(self, server_args: str, output_path: str):
+    def __init__(self, server_args: str, output_path: str, with_nsight: bool):
         super(Server, self).__init__()
         self.server_args = server_args
         self.output_path = output_path
+        self.with_nsight = with_nsight
         self.server_out = None
         self.server_err = None
 
@@ -403,6 +405,8 @@ class Server:
             self.server_out = open(os.path.join(self.output_path, 'server_out.log'), 'w')
             self.server_err = open(os.path.join(self.output_path, 'server_err.log'), 'w')
             command = f'python3 -m vllm.entrypoints.openai.api_server {self.server_args}'
+            if self.with_nsight:
+                command = f'nsys profile --output {os.path.abspath(os.path.join(self.output_path, "nsight_output"))} ' + command
             open_subprocess = subprocess.Popen(
                 shlex.split(command),
                 shell=False,
@@ -420,6 +424,8 @@ class Server:
             raise e
 
     def terminate(self, open_subprocess: Popen) -> None:
+        open_subprocess.send_signal(signal.SIGINT)
+        open_subprocess.wait(10)
         open_subprocess.kill()
         open_subprocess.terminate()
         open_subprocess.wait()
@@ -709,7 +715,7 @@ def main(args: argparse.Namespace):
     concurrent_metrics_checker = None
     try:
         if args.launch_server:
-            server = Server(args.server_args, args.result_dir)
+            server = Server(args.server_args, args.result_dir, args.launch_server_with_nsight)
             open_server_process = server.run()
 
             max_wait_for_server_seconds = 300
@@ -978,6 +984,11 @@ if __name__ == "__main__":
         type=str,
         default="",
         help="Args to send to the server when launching. Only useful when passing --launch-server as well",
+    )
+    parser.add_argument(
+        "--launch-server-with-nsight",
+        action="store_true",
+        help="Launch server with nsight profile",
     )
     parser.add_argument('--disable-log-stats',
                         action='store_true',
