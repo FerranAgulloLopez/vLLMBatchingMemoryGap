@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH --job-name=_8__2000
+#SBATCH -D ./
+#SBATCH --ntasks=1
+#SBATCH --output=benchmarks/testing/llama-2-7b/_8__2000/log_%j.out
+#SBATCH --error=benchmarks/testing/llama-2-7b/_8__2000/log_%j.err
+#SBATCH --cpus-per-task=20
+#SBATCH --gres gpu:1
+#SBATCH --time=23:59:00
+module load singularity
+singularity exec --nv --env PYTHONPATH=. --bind /gpfs/home/bsc/bsc098949/ibm1/extension/vLLMServingPlateau/vllm/core:/usr/local/lib/python3.12/dist-packages/vllm/core --bind /gpfs/home/bsc/bsc098949/ibm1/extension/vLLMServingPlateau/vllm/engine:/usr/local/lib/python3.12/dist-packages/vllm/engine --bind /gpfs/home/bsc/bsc098949/ibm1/extension/vLLMServingPlateau/vllm/entrypoints:/usr/local/lib/python3.12/dist-packages/vllm/entrypoints --bind /gpfs/home/bsc/bsc098949/ibm1/extension/vLLMServingPlateau/vllm/executor:/usr/local/lib/python3.12/dist-packages/vllm/executor --bind /gpfs/home/bsc/bsc098949/ibm1/extension/vLLMServingPlateau/vllm/lora:/usr/local/lib/python3.12/dist-packages/vllm/lora --bind /gpfs/home/bsc/bsc098949/ibm1/extension/vLLMServingPlateau/vllm/model_executor:/usr/local/lib/python3.12/dist-packages/vllm/model_executor --bind /gpfs/home/bsc/bsc098949/ibm1/extension/vLLMServingPlateau/vllm/worker:/usr/local/lib/python3.12/dist-packages/vllm/worker --bind /gpfs/home/bsc/bsc098949/ibm1/extension/vLLMServingPlateau/vllm/config.py:/usr/local/lib/python3.12/dist-packages/vllm/config.py --bind /gpfs/home/bsc/bsc098949/ibm1/extension/vLLMServingPlateau/vllm/sequence.py:/usr/local/lib/python3.12/dist-packages/vllm/sequence.py --bind /gpfs/home/bsc/bsc098949/ibm1/extension/vLLMServingPlateau/vllm/outputs.py:/usr/local/lib/python3.12/dist-packages/vllm/outputs.py /gpfs/scratch/bsc98/bsc098069/llm_benchmarking/images/vllm-benchmark-default-nsight.sif python3 benchmarks/benchmark_serving_with_metrics.py --port='31129' --result-dir='benchmarks/testing/llama-2-7b/_8__2000' --backend='openai' --disable-tqdm --dataset-path='/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/data/dummy_dataset_mean.json' --endpoint='/v1/completions' --model='/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/llama/llama-2-7b' --save-result --num-prompts='2000' --launch-server --server-args='--port=31129 --disable-log-requests --model=/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/llama/llama-2-7b --max-num-seqs='8''
