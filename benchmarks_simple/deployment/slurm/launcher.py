@@ -18,7 +18,7 @@ EXP_CONTAINER_CODE_DIR = os.getenv('EXP_CONTAINER_CODE_DIR', '/usr/local/lib/pyt
 EXP_SLURM_EXECUTABLE = os.getenv('EXP_SLURM_EXECUTABLE', 'benchmarks_simple/deployment/slurm/slurm.sh')
 
 # path to benchmark executable
-EXP_BENCHMARK_EXECUTABLE = os.getenv('EXP_BENCHMARK_EXECUTABLE', 'benchmarks_simple/offline_profiler.py')
+EXP_BENCHMARK_EXECUTABLE = os.getenv('EXP_BENCHMARK_EXECUTABLE', 'benchmarks_simple/decoding_offline_profiler.py')
 
 # path to container image
 EXP_CONTAINER_IMAGE = os.getenv('EXP_CONTAINER_IMAGE')

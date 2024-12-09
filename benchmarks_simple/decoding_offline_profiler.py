@@ -4,7 +4,7 @@ import os
 import sys
 from argparse import RawTextHelpFormatter
 from dataclasses import asdict, dataclass
-from typing import Optional
+from typing import Optional, List, Tuple
 
 import torch
 
@@ -12,6 +12,7 @@ from vllm import LLM, SamplingParams
 from vllm.engine.arg_utils import EngineArgs
 from vllm.profiler import layerwise_profile
 from vllm.utils import FlexibleArgumentParser
+from vllm.sequence import SequenceGroup, Dict
 
 BATCH_SIZE_DEFAULT = 1
 PROMPT_LEN_DEFAULT = 256
@@ -26,6 +27,29 @@ class ProfileContext:
     batch_size: int
     result_dir: str
     save_chrome_traces_folder: Optional[str]
+
+
+def check_running_prefills_decodes(seq_groups: List[SequenceGroup], current_state: Dict[str, int]) -> Tuple[int, int, Dict[str, int]]:
+    running_prefills: int = 0
+    running_decodes: int = 0
+    new_state: Dict[str, int] = {}
+    for seq_group in seq_groups:
+        request_id: str = seq_group.request_id
+        output_tokens: int = seq_group.get_seqs()[0].get_output_len()
+        if current_state is None or request_id not in current_state:
+            if output_tokens <= 1:
+                running_prefills += 1
+            else:
+                raise ValueError('Something strange happened. A request did both prefill and decode phases in the same step')
+        elif output_tokens > current_state[request_id] + 1:
+            raise ValueError('Something strange happened. A request did both prefill and decode phases in the same step')
+        elif current_state[request_id] != output_tokens:
+            if output_tokens <= 1:
+                running_prefills += 1
+            else:
+                running_decodes += 1
+        new_state[request_id] = seq_group.get_seqs()[0].get_output_len()
+    return running_prefills, running_decodes, new_state
 
 
 def get_dtype(dtype: str):
@@ -55,17 +79,8 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
 
     scheduler_config = llm.llm_engine.scheduler_config
     max_model_len = llm.llm_engine.model_config.max_model_len
-    max_num_batched_tokens = scheduler_config.max_num_batched_tokens
     max_num_seqs = scheduler_config.max_num_seqs
 
-    if batch_size * prompt_len > max_num_batched_tokens:
-        print(f"ERROR: chosen batch_size * prompt_len "
-              f"({batch_size} * {prompt_len} = {batch_size * prompt_len}) is  "
-              f"larger than max_num_batched_tokens ({max_num_batched_tokens}) "
-              f"and therefore cannot be run in a single profile step, please "
-              f"choose a smaller batch size or prompt length, or increase "
-              f"--max-num-batched-tokens")
-        sys.exit(-1)
     if batch_size >= max_num_seqs:
         print(
             f"ERROR: chosen batch_size ({batch_size}) is larger than "
@@ -107,29 +122,45 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
     print("Profile run ...")
     add_requests()
 
-    with layerwise_profile() as prefill_prof:
-        llm.llm_engine.step()  # First step is prefill
+    # do prefill phases
+    print('\nPREFILL PHASES')
+    no_more_prefills: bool = False
+    x = 0
+    current_state = None
+    while not no_more_prefills:
+        running_prefills, running_decodes, current_state = check_running_prefills_decodes(llm.llm_engine.scheduler[0].running, current_state)
+        print(f'PREFILL - {x} -> PREVIOUSLY RUN PREFILLS: {running_prefills}. PREVIOUSLY RUN DECODES: {running_decodes}. RUNNING: {len(llm.llm_engine.scheduler[0].running)}. WAITING: {len(llm.llm_engine.scheduler[0].waiting)}')
+        llm.llm_engine.step()
+        x += 1
+        if len(current_state) == batch_size:
+            prefills_finished: bool = True
+            for output_tokens in current_state.values():
+                if output_tokens != 1:
+                    prefills_finished = False
+                    break
+                elif output_tokens > 1:
+                    raise Exception('Something unexpected happened, a decoding occured during prefill phases')
+            no_more_prefills = prefills_finished
 
+    print('\nDECODE PHASES')
+    # do decode phases
     decode_profs = []
     for x in range(args.output_len - 1):
-        if len(llm.llm_engine.scheduler[0].swapped) > 0 or len(llm.llm_engine.scheduler[0].waiting) > 0:
-            raise ValueError('All requests cannot be processed at the same time with input parameters')
+        running_prefills, running_decodes, current_state = check_running_prefills_decodes(llm.llm_engine.scheduler[0].running, current_state)
+        print(f'DECODE - {x} -> PREVIOUSLY RUN PREFILLS: {running_prefills}. PREVIOUSLY RUN DECODES: {running_decodes}. RUNNING: {len(llm.llm_engine.scheduler[0].running)}. WAITING: {len(llm.llm_engine.scheduler[0].waiting)}')
         with layerwise_profile() as decode_prof:
             llm.llm_engine.step()
         decode_profs.append(decode_prof)
 
+    # check all went as expected
+    for seq_group_output_tokens in current_state.values():
+        if seq_group_output_tokens != output_len:
+            raise Exception('Something did not go as expected, a sequence group did not generate all output tokens')
+
     decode_results_list = [prof.results for prof in decode_profs]
-    prefill_results = prefill_prof.results
     has_decode = len(decode_results_list) > 0
 
     LINE_WIDTH = 80
-    print("=" * LINE_WIDTH)
-    print(f"= Prefill Model Table "
-          f"(prompt_len={prompt_len}, batch_size={batch_size})")
-    print("=" * LINE_WIDTH)
-    print()
-    prefill_results.print_model_table()
-
     if has_decode:
         print()
         print("=" * LINE_WIDTH)
@@ -139,15 +170,6 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
         print()
         decode_results_list[0].print_model_table()
 
-    print()
-    print("=" * LINE_WIDTH)
-    print(f"= Prefill Summary Table "
-          f"(prompt_len={prompt_len}, batch_size={batch_size})")
-    print("=" * LINE_WIDTH)
-    print()
-    prefill_results.print_summary_table()
-
-    if has_decode:
         print()
         print("=" * LINE_WIDTH)
         print(f"= First Decode Step Summary Table "
@@ -156,55 +178,44 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
         print()
         decode_results_list[0].print_summary_table()
 
-    if csv_output:
-        csv_filename_base = os.path.join(context.result_dir, csv_output.rstrip(".csv"))
-        prefill_results.export_model_stats_table_csv(
-            csv_filename_base + "_prefill_model_table.csv")
-        prefill_results.export_summary_stats_table_csv(
-            csv_filename_base + "_prefill_summary_table.csv")
-
-        if has_decode:
+        if csv_output:
+            csv_filename_base = os.path.join(context.result_dir, csv_output.rstrip(".csv"))
             decode_results_list[0].export_model_stats_table_csv(\
                 csv_filename_base + "_decode_model_table.csv")
             decode_results_list[0].export_summary_stats_table_csv(
                 csv_filename_base + "_decode_summary_table.csv")
 
-    if json_output:
-        cuda_devices = [
-            torch.cuda.get_device_properties(dev_idx)
-            for dev_idx in range(torch.cuda.device_count())
-        ]
+        if json_output:
+            cuda_devices = [
+                torch.cuda.get_device_properties(dev_idx)
+                for dev_idx in range(torch.cuda.device_count())
+            ]
 
-        json_dict = {
-            "context": {
-                "python_version": f"{sys.version}",
-                "torch_version": f"{torch.__version__}",
-                "torch_cuda_version": f"{torch.version.cuda}",
-                "cuda_devices": f"{cuda_devices}",
-                **asdict(context)
-            },
-            "prefill": prefill_results.convert_stats_to_dict(),
-        }
+            json_dict = {
+                "context": {
+                    "python_version": f"{sys.version}",
+                    "torch_version": f"{torch.__version__}",
+                    "torch_cuda_version": f"{torch.version.cuda}",
+                    "cuda_devices": f"{cuda_devices}",
+                    **asdict(context)
+                },
+            }
 
-        if has_decode:
             for idx, dr in enumerate(decode_results_list):
                 json_dict[f"decode_{idx + 1}"] = dr.convert_stats_to_dict()
 
-        for idx, dr in enumerate(decode_results_list[1:]):
-            json_dict[f"decode_{idx + 1}"] = dr.convert_stats_to_dict()
+            for idx, dr in enumerate(decode_results_list[1:]):
+                json_dict[f"decode_{idx + 1}"] = dr.convert_stats_to_dict()
 
-        with open(os.path.join(context.result_dir, json_output.rstrip(".json") + ".json"), "w+") as f:
-            json.dump(json_dict, f, indent=2)
-        pass
+            with open(os.path.join(context.result_dir, json_output.rstrip(".json") + ".json"), "w+") as f:
+                json.dump(json_dict, f, indent=2)
+            pass
 
     if context.save_chrome_traces_folder is not None:
         folder_path = os.path.join(context.result_dir, context.save_chrome_traces_folder)
         os.makedirs(folder_path, exist_ok=True)
-        prefill_prof.profiler.export_chrome_trace(
-            folder_path + "/prefill.json")
         for idx, decode_prof in enumerate(decode_profs):
-            decode_prof.profiler.export_chrome_trace(
-                folder_path + f"/decode_{idx + 1}.json")
+            decode_prof.profiler.export_chrome_trace(folder_path + f"/decode_{idx + 1}.json")
         print("Traces saved as prefill.json and decode_1.json, etc."
               f" in folder {folder_path}")
 
