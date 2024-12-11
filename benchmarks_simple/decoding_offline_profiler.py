@@ -146,16 +146,13 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
     # do decode phases
     decode_profs = []
     for x in range(args.output_len - 1):
+        if len(llm.llm_engine.scheduler[0].swapped) > 0 or len(llm.llm_engine.scheduler[0].waiting) > 0:
+            raise ValueError('All requests cannot be processed at the same time with input parameters')
         running_prefills, running_decodes, current_state = check_running_prefills_decodes(llm.llm_engine.scheduler[0].running, current_state)
         print(f'DECODE - {x} -> PREVIOUSLY RUN PREFILLS: {running_prefills}. PREVIOUSLY RUN DECODES: {running_decodes}. RUNNING: {len(llm.llm_engine.scheduler[0].running)}. WAITING: {len(llm.llm_engine.scheduler[0].waiting)}')
         with layerwise_profile() as decode_prof:
             llm.llm_engine.step()
         decode_profs.append(decode_prof)
-
-    # check all went as expected
-    for seq_group_output_tokens in current_state.values():
-        if seq_group_output_tokens != output_len:
-            raise Exception('Something did not go as expected, a sequence group did not generate all output tokens')
 
     decode_results_list = [prof.results for prof in decode_profs]
     has_decode = len(decode_results_list) > 0
