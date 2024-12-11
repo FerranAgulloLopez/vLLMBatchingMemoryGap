@@ -1,12 +1,0 @@
-load SINGULARITY/3.11.5 (PATH)
-Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
-Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:08<00:08,  8.18s/it]
-Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:32<00:00, 17.52s/it]
-Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:32<00:00, 16.12s/it]
-
-[rank0]: Traceback (most recent call last):
-[rank0]:   File "/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/benchmarks_simple/offline_profiler.py", line 293, in <module>
-[rank0]:     run_profile(context, csv_output=args.csv, json_output=args.json)
-[rank0]:   File "/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/benchmarks_simple/offline_profiler.py", line 116, in run_profile
-[rank0]:     raise ValueError('All requests cannot be processed at the same time with input parameters')
-[rank0]: ValueError: All requests cannot be processed at the same time with input parameters
