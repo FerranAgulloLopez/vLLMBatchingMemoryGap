@@ -42,6 +42,7 @@ def schedule_job(
     user: str,
     queue: str,
     specific_name: str,
+    default_env_vars: dict,
     results_path: str,
     arguments: str,
     exp_max_duration: str,
@@ -68,6 +69,13 @@ def schedule_job(
     env["EXP_CONTAINER_CODE_DIR"] = EXP_CONTAINER_CODE_DIR
     env["EXP_BENCHMARK_EXECUTABLE"] = EXP_BENCHMARK_EXECUTABLE
     env["EXP_CONTAINER_IMAGE"] = EXP_CONTAINER_IMAGE
+
+    # running env vars
+    str_env_vars: str = ''
+    default_env_vars['PYTHONPATH'] = EXP_CONTAINER_CODE_DIR
+    for key_env_var, value_env_var in default_env_vars.items():
+        str_env_vars += f' --env {key_env_var}={value_env_var}'
+    env["EXP_ENV_VARS"] = str_env_vars
 
     command = f'cat {EXP_SLURM_EXECUTABLE} | envsubst > {exp_results_path}/launcher.sh'
     subprocess.run(command, env=env, shell=True)
@@ -104,6 +112,7 @@ def main(
         results_path: str,
         default_args: dict,
         test_args: dict,
+        default_env_vars: dict,
         exp_max_duration: str,
         exclusive: bool,
         no_effect: bool
@@ -133,6 +142,7 @@ def main(
             user,
             queue,
             combination_name,
+            default_env_vars,
             results_path,
             arguments,
             exp_max_duration,
@@ -151,10 +161,15 @@ if __name__ == '__main__':
     parser.add_argument('--default-args', type=str, help='Dictionary with the default args')
     parser.add_argument('--test-args', type=str, help='Dictionary with the args to test against')
     parser.add_argument('--no-effect', action='store_true', help='Do everything except the step of launching the experiment')
+    parser.add_argument('--default-env-vars', type=str, help='Dictionary with the default env vars')
     args = parser.parse_args()
 
     default_args = json.loads(args.default_args.replace('\'', '"'))
     test_args = json.loads(args.test_args.replace('\'', '"'))
+    if args.default_env_vars is not None:
+        default_env_vars = json.loads(args.default_env_vars.replace('\'', '"'))
+    else:
+        default_env_vars = {}
 
     os.makedirs(args.results_path, exist_ok=True)
     config_path = os.path.join(args.results_path, f'config-{str(random.randint(0, 100000))}.txt')
@@ -168,6 +183,7 @@ if __name__ == '__main__':
         args.results_path,
         default_args,
         test_args,
+        default_env_vars,
         args.max_duration,
         args.exclusive,
         args.no_effect
