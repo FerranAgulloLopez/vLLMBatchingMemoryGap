@@ -2,6 +2,7 @@ import inspect
 import json
 import os
 import sys
+import time
 from argparse import RawTextHelpFormatter
 from dataclasses import asdict, dataclass
 from typing import Optional, List, Tuple
@@ -61,6 +62,8 @@ def get_dtype(dtype: str):
 
 def run_profile(context: ProfileContext, csv_output: Optional[str],
                 json_output: Optional[str]):
+    init_time = time.perf_counter()
+
     print("Run profile with:")
     for key, value in asdict(context).items():
         print(f"  {key} = {value}")
@@ -150,9 +153,12 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
             raise ValueError('All requests cannot be processed at the same time with input parameters')
         running_prefills, running_decodes, current_state = check_running_prefills_decodes(llm.llm_engine.scheduler[0].running, current_state)
         print(f'DECODE - {x} -> PREVIOUSLY RUN PREFILLS: {running_prefills}. PREVIOUSLY RUN DECODES: {running_decodes}. RUNNING: {len(llm.llm_engine.scheduler[0].running)}. WAITING: {len(llm.llm_engine.scheduler[0].waiting)}')
-        with layerwise_profile() as decode_prof:
+        if args.without_profiler:
             llm.llm_engine.step()
-        decode_profs.append(decode_prof)
+        else:
+            with layerwise_profile() as decode_prof:
+                llm.llm_engine.step()
+            decode_profs.append(decode_prof)
 
     decode_results_list = [prof.results for prof in decode_profs]
     has_decode = len(decode_results_list) > 0
@@ -208,13 +214,15 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
                 json.dump(json_dict, f, indent=2)
             pass
 
-    if context.save_chrome_traces_folder is not None:
+    if context.save_chrome_traces_folder is not None and not args.without_profiler:
         folder_path = os.path.join(context.result_dir, context.save_chrome_traces_folder)
         os.makedirs(folder_path, exist_ok=True)
         for idx, decode_prof in enumerate(decode_profs):
             decode_prof.profiler.export_chrome_trace(folder_path + f"/decode_{idx + 1}.json")
         print("Traces saved as prefill.json and decode_1.json, etc."
               f" in folder {folder_path}")
+
+    print(f'Elapsed time: {time.perf_counter() - init_time} seconds')
 
 
 if __name__ == "__main__":
@@ -285,6 +293,12 @@ Profile a model
         default=None,
         help="Specify directory to save benchmark json results."
              "If not specified, results are saved in the current directory.",
+    )
+    parser.add_argument(
+        "--without-profiler",
+        action="store_true",
+        default=False,
+        help="disable profiler",
     )
 
     EngineArgs.add_cli_args(parser)

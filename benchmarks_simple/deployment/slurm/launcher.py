@@ -21,7 +21,7 @@ EXP_SLURM_EXECUTABLE = os.getenv('EXP_SLURM_EXECUTABLE', 'benchmarks_simple/depl
 EXP_BENCHMARK_EXECUTABLE = os.getenv('EXP_BENCHMARK_EXECUTABLE', 'benchmarks_simple/decoding_offline_profiler.py')
 
 # path to container image
-EXP_CONTAINER_IMAGE = os.getenv('EXP_CONTAINER_IMAGE')
+EXP_CONTAINER_IMAGE = os.getenv('EXP_CONTAINER_IMAGE', '')
 if EXP_CONTAINER_IMAGE is None:
     raise ValueError('Environment variable EXP_CONTAINER_IMAGE not specified')
 
@@ -47,7 +47,9 @@ def schedule_job(
     arguments: str,
     exp_max_duration: str,
     exclusive: bool,
-    no_effect: bool
+    no_effect: bool,
+    with_nsight: bool,
+    nsight_args: str
 ) -> None:
     global \
         EXP_HOME_CODE_DIR, \
@@ -64,10 +66,8 @@ def schedule_job(
     env["EXP_NAME"] = specific_name
     env["EXP_MAX_DURATION_SECONDS"] = exp_max_duration
     env["EXP_RESULTS_PATH"] = exp_results_path
-    env["EXP_ARGS"] = arguments
     env["EXP_HOME_CODE_DIR"] = os.path.abspath(EXP_HOME_CODE_DIR)
     env["EXP_CONTAINER_CODE_DIR"] = EXP_CONTAINER_CODE_DIR
-    env["EXP_BENCHMARK_EXECUTABLE"] = EXP_BENCHMARK_EXECUTABLE
     env["EXP_CONTAINER_IMAGE"] = EXP_CONTAINER_IMAGE
 
     # running env vars
@@ -76,6 +76,12 @@ def schedule_job(
     for key_env_var, value_env_var in default_env_vars.items():
         str_env_vars += f' --env {key_env_var}={value_env_var}'
     env["EXP_ENV_VARS"] = str_env_vars
+
+    # define command
+    command = f'python3 {EXP_BENCHMARK_EXECUTABLE} {arguments}'
+    if with_nsight:
+        command = f'nsys profile --output {exp_results_path}/ {nsight_args} ' + command
+    env["EXP_BENCHMARK_COMMAND"] = command
 
     command = f'cat {EXP_SLURM_EXECUTABLE} | envsubst > {exp_results_path}/launcher.sh'
     subprocess.run(command, env=env, shell=True)
@@ -115,7 +121,9 @@ def main(
         default_env_vars: dict,
         exp_max_duration: str,
         exclusive: bool,
-        no_effect: bool
+        no_effect: bool,
+        with_nsight: bool,
+        nsight_args: str
 ) -> None:
     global ILLEGAL_PARAMETERS
 
@@ -147,7 +155,9 @@ def main(
             arguments,
             exp_max_duration,
             exclusive,
-            no_effect
+            no_effect,
+            with_nsight,
+            nsight_args
         )
 
 
@@ -162,6 +172,8 @@ if __name__ == '__main__':
     parser.add_argument('--test-args', type=str, help='Dictionary with the args to test against')
     parser.add_argument('--no-effect', action='store_true', help='Do everything except the step of launching the experiment')
     parser.add_argument('--default-env-vars', type=str, help='Dictionary with the default env vars')
+    parser.add_argument('--with-nsight', default=False, action='store_true', help='Launch with nsight profile')
+    parser.add_argument('--nsight-args', default='', type=str, help='Additional nsight arguments')
     args = parser.parse_args()
 
     default_args = json.loads(args.default_args.replace('\'', '"'))
@@ -174,7 +186,7 @@ if __name__ == '__main__':
     os.makedirs(args.results_path, exist_ok=True)
     config_path = os.path.join(args.results_path, f'config-{str(random.randint(0, 100000))}.txt')
     with open(config_path, 'w') as config_file:
-        config = 'PYTHONPATH=. python3 ' + ' '.join(sys.argv).replace('{', '"{').replace('}', '}"') + '\n'
+        config = f'EXP_CONTAINER_IMAGE={EXP_CONTAINER_IMAGE} PYTHONPATH=. python3 ' + ' '.join(sys.argv).replace('{', '"{').replace('}', '}"') + '\n'
         config_file.write(config)
 
     main(
@@ -186,5 +198,7 @@ if __name__ == '__main__':
         default_env_vars,
         args.max_duration,
         args.exclusive,
-        args.no_effect
+        args.no_effect,
+        args.with_nsight,
+        args.nsight_args
     )
