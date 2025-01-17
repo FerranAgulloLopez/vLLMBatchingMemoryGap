@@ -127,6 +127,7 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
 
     # do prefill phases
     print('\nPREFILL PHASES')
+    init_prefill_time = time.perf_counter()
     no_more_prefills: bool = False
     x = 0
     current_state = None
@@ -144,9 +145,11 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
                 elif output_tokens > 1:
                     raise Exception('Something unexpected happened, a decoding occured during prefill phases')
             no_more_prefills = prefills_finished
+    print(f'Prefill elapsed time: {time.perf_counter() - init_prefill_time} seconds')
 
-    print('\nDECODE PHASES')
     # do decode phases
+    print('\nDECODE PHASES')
+    init_decode_time = time.perf_counter()
     decode_profs = []
     for x in range(args.output_len - 1):
         if len(llm.llm_engine.scheduler[0].swapped) > 0 or len(llm.llm_engine.scheduler[0].waiting) > 0:
@@ -159,6 +162,7 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
             with layerwise_profile() as decode_prof:
                 llm.llm_engine.step()
             decode_profs.append(decode_prof)
+    print(f'Decode elapsed time: {time.perf_counter() - init_decode_time} seconds')
 
     decode_results_list = [prof.results for prof in decode_profs]
     has_decode = len(decode_results_list) > 0
@@ -222,7 +226,7 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
         print("Traces saved as prefill.json and decode_1.json, etc."
               f" in folder {folder_path}")
 
-    print(f'Elapsed time: {time.perf_counter() - init_time} seconds')
+    print(f'Total elapsed time: {time.perf_counter() - init_time} seconds')
 
 
 if __name__ == "__main__":
