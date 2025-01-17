@@ -124,6 +124,7 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
 
     print("Profile run ...")
     add_requests()
+    print(f'Initialization elapsed time: {time.perf_counter() - init_time} seconds')
 
     # do prefill phases
     print('\nPREFILL PHASES')
