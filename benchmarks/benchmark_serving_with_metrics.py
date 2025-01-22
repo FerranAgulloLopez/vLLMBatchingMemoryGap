@@ -300,11 +300,12 @@ def sample_random_requests(
 
 async def get_request(
     input_requests: List[Tuple[str, int, int]],
+    input_requests_api_urls: List[str],
     request_rate: float,
 ) -> AsyncGenerator[Tuple[str, int, int], None]:
     input_requests = iter(input_requests)
-    for request in input_requests:
-        yield request
+    for index, request in enumerate(input_requests):
+        yield request, input_requests_api_urls[index]
 
         if request_rate == float("inf"):
             # If the request rate is infinity, then we don't need to wait.
@@ -390,23 +391,37 @@ def calculate_metrics(
     return metrics, actual_output_lens
 
 
+def get_base_url(host: str, port: int, server_id: int):
+    return f"http://{host}:{port + server_id}"
+
+
+def get_api_url(host: str, port: int, endpoint: str, server_id: int):
+    return f"http://{host}:{port + server_id}{endpoint}"
+
+
 class Server:
 
-    def __init__(self, server_args: str, output_path: str, with_nsight: bool):
+    def __init__(self, server_args: str, output_path: str, with_nsight: bool, port: int, server_id: int, gpu_memory_utilization: float):
         super(Server, self).__init__()
         self.server_args = server_args
         self.output_path = output_path
         self.with_nsight = with_nsight
         self.server_out = None
         self.server_err = None
+        self.server_id = server_id
+        self.port = port
+        self.gpu_memory_utilization = gpu_memory_utilization
+
+        assert '--port' not in self.server_args
+        assert '--gpu-memory-utilization' not in self.server_args
 
     def run(self) -> Popen:
         try:
-            self.server_out = open(os.path.join(self.output_path, 'server_out.log'), 'w')
-            self.server_err = open(os.path.join(self.output_path, 'server_err.log'), 'w')
-            command = f'python3 -m vllm.entrypoints.openai.api_server {self.server_args}'
+            self.server_out = open(os.path.join(self.output_path, f'server_out_{self.server_id}.log'), 'w')
+            self.server_err = open(os.path.join(self.output_path, f'server_err_{self.server_id}.log'), 'w')
+            command = f'python3 -m vllm.entrypoints.openai.api_server --port={self.port} --gpu-memory-utilization {self.gpu_memory_utilization} {self.server_args}'
             if self.with_nsight:
-                command = f'nsys profile --output {os.path.abspath(os.path.join(self.output_path, "nsight_output"))} ' + command
+                command = f'nsys profile --output {os.path.abspath(os.path.join(self.output_path, f"nsight_output_{self.server_id}"))} ' + command
             open_subprocess = subprocess.Popen(
                 shlex.split(command),
                 shell=False,
@@ -437,16 +452,15 @@ class Server:
 
 async def benchmark(
     backend: str,
-    api_url: str,
-    base_url: str,
+    api_url_test: str,
     model_id: str,
     tokenizer: PreTrainedTokenizerBase,
     input_requests: List[Tuple[str, int, int]],
+    input_requests_api_urls: List[str],
     logprobs: Optional[int],
     best_of: int,
     request_rate: float,
     disable_tqdm: bool,
-    profile: bool,
     selected_percentile_metrics: List[str],
     selected_percentiles: List[str],
     ignore_eos: bool,
@@ -466,7 +480,7 @@ async def benchmark(
     test_input = RequestFuncInput(
         model=model_id,
         prompt=test_prompt,
-        api_url=api_url,
+        api_url=api_url_test,
         prompt_len=test_prompt_len,
         output_len=test_output_len,
         logprobs=logprobs,
@@ -482,28 +496,13 @@ async def benchmark(
     else:
         print("Initial test run completed. Starting main benchmark run...")
 
-    if profile:
-        print("Starting profiler...")
-        profile_input = RequestFuncInput(model=model_id,
-                                         prompt=test_prompt,
-                                         api_url=base_url + "/start_profile",
-                                         prompt_len=test_prompt_len,
-                                         output_len=test_output_len,
-                                         logprobs=logprobs,
-                                         best_of=best_of,
-                                         multi_modal_content=test_mm_content,
-                                         ignore_eos=ignore_eos)
-        profile_output = await request_func(request_func_input=profile_input)
-        if profile_output.success:
-            print("Profiler started")
-
     print(f"Traffic request rate: {request_rate}")
 
     pbar = None if disable_tqdm else tqdm(total=len(input_requests))
 
     benchmark_start_time = time.perf_counter()
     tasks: List[asyncio.Task] = []
-    async for request in get_request(input_requests, request_rate):
+    async for request, api_url in get_request(input_requests, input_requests_api_urls, request_rate):
         prompt, prompt_len, output_len, mm_content = request
         request_func_input = RequestFuncInput(model=model_id,
                                               prompt=prompt,
@@ -519,21 +518,6 @@ async def benchmark(
                 request_func(request_func_input=request_func_input,
                              pbar=pbar)))
     outputs: List[RequestFuncOutput] = await asyncio.gather(*tasks)
-
-    if profile:
-        print("Stopping profiler...")
-        profile_input = RequestFuncInput(
-            model=model_id,
-            prompt=test_prompt,
-            api_url=base_url + "/stop_profile",
-            prompt_len=test_prompt_len,
-            output_len=test_output_len,
-            logprobs=logprobs,
-            best_of=best_of,
-        )
-        profile_output = await request_func(request_func_input=profile_input)
-        if profile_output.success:
-            print("Profiler stopped")
 
     if pbar is not None:
         pbar.close()
@@ -625,13 +609,6 @@ def main(args: argparse.Namespace):
     model_id = args.model
     tokenizer_id = args.tokenizer if args.tokenizer is not None else args.model
 
-    if args.base_url is not None:
-        api_url = f"{args.base_url}{args.endpoint}"
-        base_url = f"{args.base_url}"
-    else:
-        api_url = f"http://{args.host}:{args.port}{args.endpoint}"
-        base_url = f"http://{args.host}:{args.port}"
-
     tokenizer = get_tokenizer(tokenizer_id,
                               trust_remote_code=args.trust_remote_code)
 
@@ -710,49 +687,80 @@ def main(args: argparse.Namespace):
     else:
         raise ValueError(f"Unknown dataset: {args.dataset_name}")
 
-    server = None
-    open_server_process = None
-    concurrent_metrics_checker = None
+    servers = []
+    open_server_processes = []
+    concurrent_metrics_checkers = []
     try:
         if args.launch_server:
-            server = Server(args.server_args, args.result_dir, args.launch_server_with_nsight)
-            open_server_process = server.run()
+            # launch servers
+            assert args.multiple_servers > 0
+            gpu_memory_utilization = 0.9
+            gpu_memory_utilization_by_server = gpu_memory_utilization / args.multiple_servers
+            for server_id in range(args.multiple_servers):
+                server = Server(args.server_args, args.result_dir, args.launch_server_with_nsight, args.port + server_id, server_id, gpu_memory_utilization_by_server)
+                open_server_process = server.run()
+                servers.append(server)
+                open_server_processes.append(open_server_process)
 
+            # check servers started
             max_wait_for_server_seconds = 300
             init_time = time.time()
-            server_started = False
-            while not server_started and time.time() - init_time < max_wait_for_server_seconds:
-                try:
-                    if requests.get(base_url + "/metrics").status_code == 200:
-                        server_started = True
-                    else:
-                        time.sleep(5)
-                except Exception as e:
-                    time.sleep(5)
-            if not server_started:
-                raise Exception("Server did not start on time")
-            print("Server started")
+            servers_to_start = {get_base_url(args.host, args.port, server_id) + "/metrics" for server_id in range(args.multiple_servers)}
+            while len(servers_to_start) > 0 and time.time() - init_time < max_wait_for_server_seconds:
+                started_servers: List[str] = []
+                for ping_url in servers_to_start:
+                    try:
+                        if requests.get(ping_url).status_code == 200:
+                            started_servers.append(ping_url)
+                        else:
+                            time.sleep(1)
+                    except Exception as e:
+                        time.sleep(1)
+                time.sleep(5)
+                for started_server in started_servers:
+                    servers_to_start.remove(started_server)
+            if len(servers_to_start) > 0:
+                raise Exception("At least one server did not start on time")
+            print("Servers started")
 
         if not args.disable_log_stats:
-            concurrent_metrics_checker = ConcurrentMetricsChecker(
-                args.result_dir,
-                base_url + "/metrics"
-            )
-            concurrent_metrics_checker.start()
+            # launch metric checkers
+            for server_id in range(args.multiple_servers):
+                concurrent_metrics_checker = ConcurrentMetricsChecker(
+                    args.result_dir,
+                    get_base_url(args.host, args.port, server_id) + "/metrics",
+                    server_id
+                )
+                concurrent_metrics_checker.start()
+                concurrent_metrics_checkers.append(concurrent_metrics_checker)
+
+        # distribute requests by server
+        input_requests_api_urls: List[str] = []
+        if not args.launch_server or args.multiple_servers == 1:
+            input_requests_api_urls = [get_api_url(args.host, args.port, args.endpoint, 0)] * len(input_requests)
+        else:
+            server_id = 0
+            while len(input_requests_api_urls) < len(input_requests):
+                input_requests_api_urls.append(get_api_url(args.host, args.port, args.endpoint, server_id))
+                server_id += 1
+                if server_id >= args.multiple_servers:
+                    server_id = 0
+            random.shuffle(input_requests_api_urls)
+        values, counts = np.unique(input_requests_api_urls, return_counts=True)
+        print(f"Requests to servers. Values: {values}. Counts: {counts}")
 
         benchmark_result = asyncio.run(
             benchmark(
                 backend=backend,
-                api_url=api_url,
-                base_url=base_url,
+                api_url_test=get_api_url(args.host, args.port, args.endpoint, 0),  # one example from prompt test
                 model_id=model_id,
                 tokenizer=tokenizer,
                 input_requests=input_requests,
+                input_requests_api_urls=input_requests_api_urls,
                 logprobs=args.logprobs,
                 best_of=args.best_of,
                 request_rate=args.request_rate,
                 disable_tqdm=args.disable_tqdm,
-                profile=args.profile,
                 selected_percentile_metrics=args.percentile_metrics.split(","),
                 selected_percentiles=[
                     float(p) for p in args.metric_percentiles.split(",")
@@ -801,20 +809,24 @@ def main(args: argparse.Namespace):
             with open(file_name, "w", encoding='utf-8') as outfile:
                 json.dump(result_json, outfile)
     finally:
-        try:
-            if not args.disable_log_stats and concurrent_metrics_checker is not None:
-                time.sleep(15)  # for correctly monitoring of metrics
-                concurrent_metrics_checker.terminate()
-                concurrent_metrics_checker.join()
-                print('Concurrent checker terminated')
-        except Exception as e:
-            print(e)
-        try:
-            if args.launch_server and server and open_server_process:
-                server.terminate(open_server_process)
-                print('Server terminated')
-        except Exception as e:
-            print(e)
+
+        if not args.disable_log_stats and len(concurrent_metrics_checkers) > 0:
+            time.sleep(15)  # for correctly monitoring of metrics
+            for concurrent_metrics_checker in concurrent_metrics_checkers:
+                try:
+                    concurrent_metrics_checker.terminate()
+                    concurrent_metrics_checker.join()
+                except Exception as e:
+                    print(e)
+            print('Concurrent checkers terminated')
+
+        if args.launch_server and len(servers) > 0:
+            for index, server in enumerate(servers):
+                try:
+                    server.terminate(open_server_processes[index])
+                except Exception as e:
+                    print(e)
+            print('Servers terminated')
 
 
 if __name__ == "__main__":
@@ -825,12 +837,6 @@ if __name__ == "__main__":
         type=str,
         default="vllm",
         choices=list(ASYNC_REQUEST_FUNCS.keys()),
-    )
-    parser.add_argument(
-        "--base-url",
-        type=str,
-        default=None,
-        help="Server or API base url if not using http host and port.",
     )
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--port", type=int, default=8000)
@@ -916,12 +922,6 @@ if __name__ == "__main__":
         help="Specify to disable tqdm progress bar.",
     )
     parser.add_argument(
-        "--profile",
-        action="store_true",
-        help="Use Torch Profiler. The endpoint must be launched with "
-        "VLLM_TORCH_PROFILER_DIR to enable profiler.",
-    )
-    parser.add_argument(
         "--save-result",
         action="store_true",
         help="Specify to save benchmark results to a json file",
@@ -984,6 +984,12 @@ if __name__ == "__main__":
         type=str,
         default="",
         help="Args to send to the server when launching. Only useful when passing --launch-server as well",
+    )
+    parser.add_argument(
+        "--multiple-servers",
+        type=int,
+        default=1,
+        help="Launch multiple servers",
     )
     parser.add_argument(
         "--launch-server-with-nsight",

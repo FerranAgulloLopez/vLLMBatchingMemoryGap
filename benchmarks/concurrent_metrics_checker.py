@@ -54,11 +54,12 @@ WRITING_RATIO = 20
 
 class ConcurrentMetricsChecker(Process):
 
-    def __init__(self, output_path: str, metrics_api_url: str):
+    def __init__(self, output_path: str, metrics_api_url: str, server_id: int):
         global GPU_METRICS_NVIDIA_SMI, GPU_METRICS_NVIDIA_SMI_DOM_SELECT, GPU_METRICS_NVIDIA_SMI_DOM_GPM
         super(ConcurrentMetricsChecker, self).__init__()
         self.output_path: str = output_path
         self.metrics_api_url: str = metrics_api_url
+        self.server_id = server_id
 
         self.gpu_metrics_command_nvidia_smi: str = f'nvidia-smi --format=csv'
         if len(GPU_METRICS_NVIDIA_SMI) > 0:
@@ -74,7 +75,7 @@ class ConcurrentMetricsChecker(Process):
         signal.signal(signal.SIGTERM, self.__signal_term_handler)
 
         self.cache_config = requests.get(self.metrics_api_url).text
-        with open(os.path.join(self.output_path, f'cache_config.txt'), 'w') as text_file:
+        with open(os.path.join(self.output_path, f'cache_config_server_{self.server_id}.txt'), 'w') as text_file:
             text_file.write(self.cache_config)
 
     def run(self):
@@ -85,7 +86,7 @@ class ConcurrentMetricsChecker(Process):
             # initialize engine metrics
             _id = 'metrics_engine'
             row: str = ','.join(PROMETHEUS_METRICS) + '\n'
-            open_file = open(os.path.join(self.output_path, f'{_id}.csv'), 'a')
+            open_file = open(os.path.join(self.output_path, f'{_id}_server_{self.server_id}.csv'), 'a')
             self.rows_to_write[_id] = (
                 open_file,
                 ['time [s],' + row]
@@ -96,7 +97,7 @@ class ConcurrentMetricsChecker(Process):
             number_gpu_devices: int = len(rows) - 1
             for gpu_device in range(number_gpu_devices):
                 _id = f'metrics_gpu_device_nvidia_smi_{gpu_device}'
-                open_file = open(os.path.join(self.output_path, f'{_id}.csv'), 'a')
+                open_file = open(os.path.join(self.output_path, f'{_id}_server_{self.server_id}.csv'), 'a')
                 self.rows_to_write[_id] = (
                         open_file,
                         ['time [s],' + rows[0] + '\n']
@@ -106,7 +107,7 @@ class ConcurrentMetricsChecker(Process):
             rows: List[str] = self.__run_subprocess(self.gpu_metrics_command_nvidia_smi_dom)
             for gpu_device in range(number_gpu_devices):
                 _id = f'metrics_gpu_device_nvidia_smi_dom_{gpu_device}'
-                open_file = open(os.path.join(self.output_path, f'{_id}.csv'), 'a')
+                open_file = open(os.path.join(self.output_path, f'{_id}_server_{self.server_id}.csv'), 'a')
                 row_header_0: str = ' '.join(rows[0].replace('# ', '').split()).replace(' ', ',')
                 row_header_1: str = ' '.join(rows[1].replace('# ', '').split()).replace(' ', ',')
                 row_header_0.replace('# ', '')

@@ -141,7 +141,7 @@ def main(
             print(f'Name -> {combination_name}. Server Args -> {server_args_combination}. Benchmark Args -> {benchmark_args_combination}')
 
             random_port = random.randint(1024, 65535)
-            arguments = f"--port='{random_port}' --result-dir='{os.path.join(results_path, combination_name)}' {benchmark_args_combination} --launch-server --server-args='--port={random_port} {server_args_combination}'"
+            arguments = f"--port='{random_port}' --result-dir='{os.path.join(results_path, combination_name)}' {benchmark_args_combination} --launch-server --server-args='{server_args_combination}'"
 
             schedule_job(
                 user,
