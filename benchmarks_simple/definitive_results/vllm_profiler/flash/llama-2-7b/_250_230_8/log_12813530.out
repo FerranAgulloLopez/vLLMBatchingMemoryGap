@@ -1,0 +1,741 @@
+Run profile with:
+  engine_args = {'model': '/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/llama/llama-2-7b', 'served_model_name': None, 'tokenizer': '/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/llama/llama-2-7b', 'skip_tokenizer_init': False, 'tokenizer_mode': 'auto', 'trust_remote_code': False, 'download_dir': None, 'load_format': 'auto', 'config_format': <ConfigFormat.AUTO: 'auto'>, 'dtype': 'auto', 'kv_cache_dtype': 'auto', 'quantization_param_path': None, 'seed': 0, 'max_model_len': None, 'worker_use_ray': False, 'distributed_executor_backend': None, 'pipeline_parallel_size': 1, 'tensor_parallel_size': 1, 'max_parallel_loading_workers': None, 'block_size': 16, 'enable_prefix_caching': False, 'disable_sliding_window': False, 'use_v2_block_manager': False, 'swap_space': 4, 'cpu_offload_gb': 0, 'gpu_memory_utilization': 0.9, 'max_num_batched_tokens': 4096, 'max_num_seqs': 1024, 'max_logprobs': 20, 'disable_log_stats': False, 'revision': None, 'code_revision': None, 'rope_scaling': None, 'rope_theta': None, 'tokenizer_revision': None, 'quantization': None, 'enforce_eager': False, 'max_context_len_to_capture': None, 'max_seq_len_to_capture': 8192, 'disable_custom_all_reduce': False, 'tokenizer_pool_size': 0, 'tokenizer_pool_type': 'ray', 'tokenizer_pool_extra_config': None, 'limit_mm_per_prompt': None, 'enable_lora': False, 'max_loras': 1, 'max_lora_rank': 16, 'enable_prompt_adapter': False, 'max_prompt_adapters': 1, 'max_prompt_adapter_token': 0, 'fully_sharded_loras': False, 'lora_extra_vocab_size': 256, 'long_lora_scaling_factors': None, 'lora_dtype': 'auto', 'max_cpu_loras': None, 'device': 'auto', 'num_scheduler_steps': 1, 'multi_step_stream_outputs': True, 'ray_workers_use_nsight': False, 'num_gpu_blocks_override': None, 'num_lookahead_slots': 0, 'model_loader_extra_config': None, 'ignore_patterns': [], 'preemption_mode': None, 'scheduler_delay_factor': 0.0, 'enable_chunked_prefill': None, 'guided_decoding_backend': 'outlines', 'speculative_model': None, 'speculative_model_quantization': None, 'speculative_draft_tensor_parallel_size': None, 'num_speculative_tokens': None, 'speculative_disable_mqa_scorer': False, 'speculative_max_model_len': None, 'speculative_disable_by_batch_size': None, 'ngram_prompt_lookup_max': None, 'ngram_prompt_lookup_min': None, 'spec_decoding_acceptance_method': 'rejection_sampler', 'typical_acceptance_sampler_posterior_threshold': None, 'typical_acceptance_sampler_posterior_alpha': None, 'qlora_adapter_name_or_path': None, 'disable_logprobs_during_spec_decoding': None, 'otlp_traces_endpoint': None, 'collect_detailed_traces': None, 'disable_async_output_proc': False, 'override_neuron_config': None, 'mm_processor_kwargs': None, 'scheduling_policy': 'fcfs'}
+  prompt_len = 250
+  output_len = 230
+  batch_size = 8
+  result_dir = benchmarks_simple/definitive_results/initial/llama-2-7b/_250_230_8
+  save_chrome_traces_folder = None
+WARNING 12-09 15:50:40 arg_utils.py:1019] [DEPRECATED] Block manager v1 has been removed, and setting --use-v2-block-manager to True or False has no effect on vLLM behavior. Please remove --use-v2-block-manager in your engine argument. If your use case is not supported by SelfAttnBlockSpaceManager (i.e. block manager v2), please file an issue with detailed information.
+INFO 12-09 15:50:40 llm_engine.py:237] Initializing an LLM engine (v0.5.2.dev1210+g6f078ea3c) with config: model='/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/llama/llama-2-7b', speculative_config=None, tokenizer='/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/llama/llama-2-7b', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, override_neuron_config=None, rope_scaling=None, rope_theta=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.float16, max_seq_len=4096, download_dir=None, load_format=LoadFormat.AUTO, tensor_parallel_size=1, pipeline_parallel_size=1, disable_custom_all_reduce=False, quantization=None, enforce_eager=False, kv_cache_dtype=auto, quantization_param_path=None, device_config=cuda, decoding_config=DecodingConfig(guided_decoding_backend='outlines'), observability_config=ObservabilityConfig(otlp_traces_endpoint=None, collect_model_forward_time=False, collect_model_execute_time=False), seed=0, served_model_name=/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/llama/llama-2-7b, num_scheduler_steps=1, chunked_prefill_enabled=False multi_step_stream_outputs=True, enable_prefix_caching=False, use_async_output_proc=True, use_cached_outputs=False, mm_processor_kwargs=None)
+INFO 12-09 15:50:41 model_runner.py:1056] Starting to load model /gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/llama/llama-2-7b...
+INFO 12-09 15:50:47 model_runner.py:1067] Loading model weights took 12.5523 GB
+INFO 12-09 15:50:48 worker.py:262] Memory profiling results: total_gpu_memory=63.43GiB initial_memory_usage=13.15GiB peak_torch_memory=13.78GiB non_torch_memory=0.10GiB kv_cache_size=43.21GiB gpu_memory_utilization=0.90
+INFO 12-09 15:50:48 gpu_executor.py:122] # GPU blocks: 5531, # CPU blocks: 512
+INFO 12-09 15:50:48 gpu_executor.py:126] Maximum concurrency for 4096 tokens per request: 21.61x
+INFO 12-09 15:50:50 model_runner.py:1395] Capturing the model for CUDA graphs. This may lead to unexpected consequences if the model is not static. To run the model in eager mode, set 'enforce_eager=True' or use '--enforce-eager' in the CLI.
+INFO 12-09 15:50:50 model_runner.py:1399] CUDA graphs can take additional 1~3 GiB memory per GPU. If you are running out of memory, consider decreasing `gpu_memory_utilization` or enforcing eager mode. You can also reduce the `max_num_seqs` as needed to decrease memory usage.
+INFO 12-09 15:51:20 model_runner.py:1523] Graph capturing finished in 31 secs.
+llm.llm_engine.model_config.max_model_len:  4096
+Warm up run ...
+Profile run ...
+
+PREFILL PHASES
+PREFILL - 0 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 0. RUNNING: 0. WAITING: 8
+PREFILL - 1 -> PREVIOUSLY RUN PREFILLS: 8. PREVIOUSLY RUN DECODES: 0. RUNNING: 8. WAITING: 0
+
+DECODE PHASES
+DECODE - 0 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 1 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 2 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 3 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 4 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 5 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 6 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 7 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 8 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 9 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 10 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 11 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 12 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 13 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 14 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 15 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 16 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 17 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 18 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 19 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 20 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 21 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 22 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 23 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 24 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 25 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 26 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 27 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 28 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 29 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 30 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 31 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 32 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 33 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+INFO 12-09 15:51:25 metrics.py:360] Avg prompt throughput: 782.5 tokens/s, Avg generation throughput: 56.3 tokens/s, Running: 8 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 2.6%, CPU KV cache usage: 0.0%.
+DECODE - 34 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 35 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 36 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 37 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 38 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 39 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 40 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 41 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 42 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 43 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 44 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 45 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 46 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 47 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 48 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 49 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 50 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 51 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 52 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 53 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 54 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 55 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 56 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 57 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 58 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 59 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 60 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 61 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 62 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 63 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 64 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 65 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 66 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 67 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 68 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 69 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+INFO 12-09 15:51:30 metrics.py:360] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 57.0 tokens/s, Running: 8 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 3.0%, CPU KV cache usage: 0.0%.
+DECODE - 70 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 71 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 72 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 73 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 74 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 75 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 76 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 77 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 78 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 79 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 80 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 81 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 82 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 83 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 84 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 85 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 86 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 87 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 88 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 89 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 90 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 91 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 92 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 93 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 94 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 95 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 96 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 97 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 98 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 99 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 100 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 101 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 102 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+INFO 12-09 15:51:36 metrics.py:360] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 51.6 tokens/s, Running: 8 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 3.3%, CPU KV cache usage: 0.0%.
+DECODE - 103 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 104 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 105 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 106 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 107 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 108 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 109 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 110 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 111 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 112 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 113 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 114 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 115 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 116 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 117 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 118 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 119 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 120 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 121 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 122 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 123 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 124 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 125 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 126 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 127 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 128 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 129 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 130 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 131 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 132 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 133 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 134 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 135 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 136 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+INFO 12-09 15:51:41 metrics.py:360] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 54.2 tokens/s, Running: 8 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 3.6%, CPU KV cache usage: 0.0%.
+DECODE - 137 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 138 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 139 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 140 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 141 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 142 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 143 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 144 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 145 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 146 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 147 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 148 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 149 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 150 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 151 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 152 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 153 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 154 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 155 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 156 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 157 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 158 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 159 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 160 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 161 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 162 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 163 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 164 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 165 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 166 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 167 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 168 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 169 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 170 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 171 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 172 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 173 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 174 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+INFO 12-09 15:51:46 metrics.py:360] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 59.6 tokens/s, Running: 8 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 3.9%, CPU KV cache usage: 0.0%.
+DECODE - 175 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 176 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 177 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 178 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 179 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 180 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 181 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 182 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 183 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 184 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 185 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 186 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 187 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 188 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 189 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 190 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 191 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 192 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 193 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 194 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 195 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 196 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 197 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 198 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 199 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 200 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 201 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 202 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 203 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 204 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 205 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 206 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 207 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 208 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+INFO 12-09 15:51:51 metrics.py:360] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 53.2 tokens/s, Running: 8 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 4.2%, CPU KV cache usage: 0.0%.
+DECODE - 209 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 210 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 211 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 212 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 213 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 214 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 215 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 216 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 217 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 218 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 219 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 220 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 221 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 222 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 223 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 224 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 225 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 226 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 227 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+DECODE - 228 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 8. RUNNING: 8. WAITING: 0
+
+================================================================================
+= First Decode Step Model Table (prompt_len=250, batch_size=8)
+================================================================================
+
+name                                                         | cpu_time_us  | cuda_time_us | pct_cuda_... | trace                                                       
+========================================================================================================================================================================
+CUDAGraphRunner                                              |       680.07 |     12930.30 |        96.74 |                                                             
+|- Memcpy DtoD (Device -> Device)                            |         0.00 |         1.54 |         0.01 | copy_(int64[8], int64[8], True)                             
+|- Memcpy DtoD (Device -> Device)                            |         0.00 |         1.28 |         0.01 | copy_(int64[8], int64[8], True)                             
+|- Memcpy DtoD (Device -> Device)                            |         0.00 |         1.18 |         0.01 | copy_(int64[8], int64[8], True)                             
+|- Memcpy DtoD (Device -> Device)                            |         0.00 |         1.38 |         0.01 | copy_(int32[8], int32[8], True)                             
+|- Memcpy DtoD (Device -> Device)                            |         0.00 |         1.41 |         0.01 | copy_(int32[8, 256], int32[8, 256], True)                   
+|- void at::native::vectorized_elementwise_kernel<4, at::... |         0.00 |         1.22 |         0.01 | fill_(int64[1], 0)                                          
+|- void at::native::vectorized_elementwise_kernel<4, at::... |         0.00 |         1.09 |         0.01 | fill_(int64[1], 16)                                         
+|- void at::native::(anonymous namespace)::indexSelectSma... |         0.00 |         7.20 |         0.05 |                                                             
+|- void vllm::rms_norm_kernel<c10::Half>(c10::Half*, c10:... |         0.00 |         4.45 |         0.03 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(lo... |         0.00 |         4.77 |         0.04 |                                                             
+|- void vllm::reshape_and_cache_flash_kernel<unsigned sho... |         0.00 |         3.52 |         0.03 |                                                             
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<... |         0.00 |        27.07 |         0.20 |                                                             
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64... |         0.00 |        82.82 |         0.62 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       122.46 |         0.92 |                                                             
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half v... |         0.00 |         7.14 |         0.05 |                                                             
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f1... |         0.00 |        64.77 |         0.48 |                                                             
+|- void splitKreduce_kernel<32, 16, int, float, __half, f... |         0.00 |         1.92 |         0.01 |                                                             
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Ha... |         0.00 |         3.07 |         0.02 |                                                             
+LogitsProcessor                                              |       211.43 |       183.01 |         1.37 |                                                             
+|- void at::native::(anonymous namespace)::indexSelectSma... |         0.00 |         5.82 |         0.04 | index_select(float16[8, 4096], 0, int64[8])                 
+|- Memset (Device)                                           |         0.00 |         0.80 |         0.01 | mm(float16[8, 4096], float16[4096, 32000]) <- matmul(floa...
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x6... |         0.00 |       176.38 |         1.32 | mm(float16[8, 4096], float16[4096, 32000]) <- matmul(floa...
+Sampler                                                      |      9780.80 |       252.77 |         1.89 |                                                             
+|- Memcpy HtoD (Pinned -> Device)                            |         0.00 |         2.66 |         0.02 | copy_(float16[8], float16[8], True) <- _to_copy(float16[8...
+|- Memcpy HtoD (Pinned -> Device)                            |         0.00 |         2.18 |         0.02 | copy_(float16[8], float16[8], True) <- _to_copy(float16[8...
+|- Memcpy HtoD (Pinned -> Device)                            |         0.00 |         2.43 |         0.02 | copy_(int32[8], int32[8], True) <- _to_copy(int32[8], 3, ...
+|- Memcpy HtoD (Pinned -> Device)                            |         0.00 |         2.14 |         0.02 | copy_(float16[8], float16[8], True) <- _to_copy(float16[8...
+|- Memcpy HtoD (Pinned -> Device)                            |         0.00 |         2.11 |         0.02 | copy_(float16[8], float16[8], True) <- _to_copy(float16[8...
+|- Memcpy HtoD (Pinned -> Device)                            |         0.00 |         2.24 |         0.02 | copy_(float16[8], float16[8], True) <- _to_copy(float16[8...
+|- Memcpy HtoD (Pinned -> Device)                            |         0.00 |         2.18 |         0.02 | copy_(float16[8], float16[8], True) <- _to_copy(float16[8...
+|- void at::native::unrolled_elementwise_kernel<at::nativ... |         0.00 |         4.29 |         0.03 | copy_(float32[8, 32000], float16[8, 32000], False) <- _to...
+|- void at::native::elementwise_kernel<128, 4, at::native... |         0.00 |         4.67 |         0.03 | div_(float32[8, 32000], float16[8, 1])                      
+|- at::native::(anonymous namespace)::fill_index_and_segm... |         0.00 |         2.53 |         0.02 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- Memset (Device)                                           |         0.00 |         0.70 |         0.01 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- Memset (Device)                                           |         0.00 |         1.57 |         0.01 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- void at_cuda_detail::cub::DeviceRadixSortHistogramKern... |         0.00 |         4.45 |         0.03 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- void at_cuda_detail::cub::DeviceRadixSortExclusiveSumK... |         0.00 |         1.92 |         0.01 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- Memset (Device)                                           |         0.00 |         1.57 |         0.01 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- void at_cuda_detail::cub::DeviceRadixSortOnesweepKerne... |         0.00 |        11.71 |         0.09 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- Memset (Device)                                           |         0.00 |         1.54 |         0.01 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- void at_cuda_detail::cub::DeviceRadixSortOnesweepKerne... |         0.00 |        11.30 |         0.08 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- Memset (Device)                                           |         0.00 |         1.44 |         0.01 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- void at_cuda_detail::cub::DeviceRadixSortOnesweepKerne... |         0.00 |        11.39 |         0.09 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- Memset (Device)                                           |         0.00 |         1.57 |         0.01 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- void at_cuda_detail::cub::DeviceRadixSortOnesweepKerne... |         0.00 |        11.36 |         0.08 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- Memset (Device)                                           |         0.00 |         0.74 |         0.01 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- Memset (Device)                                           |         0.00 |         1.50 |         0.01 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- void at_cuda_detail::cub::DeviceRadixSortHistogramKern... |         0.00 |         3.07 |         0.02 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- void at_cuda_detail::cub::DeviceRadixSortExclusiveSumK... |         0.00 |         1.57 |         0.01 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- Memset (Device)                                           |         0.00 |         1.31 |         0.01 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- void at_cuda_detail::cub::DeviceRadixSortOnesweepKerne... |         0.00 |         9.57 |         0.07 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- void at::native::(anonymous namespace)::sort_postproce... |         0.00 |         5.02 |         0.04 | sort(float32[8, 32000], False, -1, False) <- sort(float32...
+|- Memcpy DtoD (Device -> Device)                            |         0.00 |         2.08 |         0.02 | copy_(float32[8, 32000], float32[8, 32000], False) <- sor...
+|- void at::native::unrolled_elementwise_kernel<at::nativ... |         0.00 |         1.89 |         0.01 | copy_(int64[8], int32[8], False) <- _to_copy(int32[8], 4,...
+|- void at::native::vectorized_elementwise_kernel<4, at::... |         0.00 |         1.31 |         0.01 | sub(int64[], int64[8], 1) <- rsub(int64[8], 32000, 1)       
+|- void at::native::_scatter_gather_elementwise_kernel<12... |         0.00 |         2.53 |         0.02 | gather(float32[8, 32000], 1, int64[8, 1], False)            
+|- void at::native::elementwise_kernel<128, 4, at::native... |         0.00 |         3.36 |         0.03 | lt(float32[8, 32000], float32[8, 1])                        
+|- void at::native::vectorized_elementwise_kernel<4, at::... |         0.00 |         1.92 |         0.01 | masked_fill_(float32[8, 32000], bool[8, 32000], -inf)       
+|- void at::native::(anonymous namespace)::cunn_SoftMaxFo... |         0.00 |        11.30 |         0.08 | _softmax(float32[8, 32000], -1, False) <- softmax(float32...
+|- void at::native::tensor_kernel_scan_innermost_dim<floa... |         0.00 |        46.21 |         0.35 | cumsum(float32[8, 32000], -1, None)                         
+|- void at::native::vectorized_elementwise_kernel<4, at::... |         0.00 |         1.66 |         0.01 | sub(int64[], float16[8, 1], 1) <- rsub(float16[8, 1], 1, 1) 
+|- void at::native::elementwise_kernel<128, 4, at::native... |         0.00 |         4.74 |         0.04 | le(float32[8, 32000], float16[8, 1])                        
+|- void at::native::elementwise_kernel<128, 4, at::native... |         0.00 |         1.70 |         0.01 | fill_(bool[8], bool[])                                      
+|- void at::native::vectorized_elementwise_kernel<4, at::... |         0.00 |         1.92 |         0.01 | masked_fill_(float32[8, 32000], bool[8, 32000], -inf)       
+|- void at::native::_scatter_gather_elementwise_kernel<12... |         0.00 |         7.55 |         0.06 | scatter_(float32[8, 32000], -1, int64[8, 32000], float32[...
+|- void at::native::(anonymous namespace)::cunn_SoftMaxFo... |         0.00 |        16.83 |         0.13 | _softmax(float32[8, 32000], -1, False) <- softmax(float32...
+|- void at::native::(anonymous namespace)::cunn_SoftMaxFo... |         0.00 |         8.77 |         0.07 | _log_softmax(float32[8, 32000], -1, False) <- log_softmax...
+|- void at::native::unrolled_elementwise_kernel<at::nativ... |         0.00 |         1.89 |         0.01 | copy_(int64[8], int32[8], False) <- _to_copy(int32[8], 4,...
+|- void at::native::index_elementwise_kernel<128, 4, at::... |         0.00 |         4.80 |         0.04 | index(float32[8, 32000], None)                              
+|- void at::native::(anonymous namespace)::distribution_e... |         0.00 |         4.58 |         0.03 | exponential_(float32[8, 32000], 1.0, None)                  
+|- void at::native::vectorized_elementwise_kernel<4, at::... |         0.00 |         2.75 |         0.02 | div_(float32[8, 32000], float32[8, 32000])                  
+|- void at::native::reduce_kernel<512, 1, at::native::Red... |         0.00 |        11.62 |         0.09 | argmax(float32[8, 32000], 1, False)                         
+|- Memcpy DtoH (Device -> Pageable)                          |         0.00 |         2.66 |         0.02 | copy_(int64[8, 1], int64[8, 1], False) <- _to_copy(int64[...
+
+================================================================================
+= First Decode Step Summary Table (prompt_len=250, batch_size=8)
+================================================================================
+
+name                                                                             | cuda_time_us | pct_cuda_... | invocations    
+================================================================================================================================
+CUDAGraphRunner                                                                  |     12930.30 |        96.74 |            1.00
+|- Memcpy DtoD (Device -> Device)                                                |         6.78 |         0.05 |            5.00
+|- void at::native::vectorized_elementwise_kernel<4, at::native::FillFunctor<... |         2.30 |         0.02 |            2.00
+|- void at::native::(anonymous namespace)::indexSelectSmallIndex<c10::Half, l... |         7.20 |         0.05 |            1.00
+|- void vllm::rms_norm_kernel<c10::Half>(c10::Half*, c10::Half const*, c10::H... |         4.45 |         0.03 |            1.00
+|- sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64_stage6_warpsize2x2x... |      5300.22 |        39.65 |           64.00
+|- void vllm::rotary_embedding_kernel<c10::Half, true>(long const*, c10::Half... |       152.58 |         1.14 |           32.00
+|- void vllm::reshape_and_cache_flash_kernel<unsigned short, unsigned short, ... |       112.64 |         0.84 |           32.00
+|- void flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<128, 64, 128, 4, fal... |       866.30 |         6.48 |           32.00
+|- std::enable_if<(((8)>(0)))&&vllm::_typeConvert<c10::Half>::exists, void>::... |       196.61 |         1.47 |           64.00
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x64_warpgroupsize1x1x1... |      3918.85 |        29.32 |           32.00
+|- void vllm::act_and_mul_kernel<c10::Half, &(c10::Half vllm::silu_kernel<c10... |       228.35 |         1.71 |           32.00
+|- void cutlass::Kernel<cutlass_80_tensorop_s16816gemm_f16_128x64_64x6_tn_ali... |      2072.58 |        15.51 |           32.00
+|- void splitKreduce_kernel<32, 16, int, float, __half, float, __half, true, ... |        61.44 |         0.46 |           32.00
+LogitsProcessor                                                                  |       183.01 |         1.37 |            1.00
+|- void at::native::(anonymous namespace)::indexSelectSmallIndex<c10::Half, l... |         5.82 |         0.04 |            1.00
+|- Memset (Device)                                                               |         0.80 |         0.01 |            1.00
+|- sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x64_warpgroupsize1x1x1... |       176.38 |         1.32 |            1.00
+Sampler                                                                          |       252.77 |         1.89 |            1.00
+|- Memcpy HtoD (Pinned -> Device)                                                |        15.94 |         0.12 |            7.00
+|- void at::native::unrolled_elementwise_kernel<at::native::direct_copy_kerne... |         4.29 |         0.03 |            1.00
+|- void at::native::elementwise_kernel<128, 4, at::native::gpu_kernel_impl<at... |         4.67 |         0.03 |            1.00
+|- at::native::(anonymous namespace)::fill_index_and_segment_kernel(int2*, in... |         2.53 |         0.02 |            1.00
+|- Memset (Device)                                                               |        11.93 |         0.09 |            9.00
+|- void at_cuda_detail::cub::DeviceRadixSortHistogramKernel<at_cuda_detail::c... |         4.45 |         0.03 |            1.00
+|- void at_cuda_detail::cub::DeviceRadixSortExclusiveSumKernel<at_cuda_detail... |         1.92 |         0.01 |            1.00
+|- void at_cuda_detail::cub::DeviceRadixSortOnesweepKernel<at_cuda_detail::cu... |        45.76 |         0.34 |            4.00
+|- void at_cuda_detail::cub::DeviceRadixSortHistogramKernel<at_cuda_detail::c... |         3.07 |         0.02 |            1.00
+|- void at_cuda_detail::cub::DeviceRadixSortExclusiveSumKernel<at_cuda_detail... |         1.57 |         0.01 |            1.00
+|- void at_cuda_detail::cub::DeviceRadixSortOnesweepKernel<at_cuda_detail::cu... |         9.57 |         0.07 |            1.00
+|- void at::native::(anonymous namespace)::sort_postprocess_kernel<float>(flo... |         5.02 |         0.04 |            1.00
+|- Memcpy DtoD (Device -> Device)                                                |         2.08 |         0.02 |            1.00
+|- void at::native::unrolled_elementwise_kernel<at::native::direct_copy_kerne... |         3.78 |         0.03 |            2.00
+|- void at::native::vectorized_elementwise_kernel<4, at::native::CUDAFunctorO... |         1.31 |         0.01 |            1.00
+|- void at::native::_scatter_gather_elementwise_kernel<128, 4, at::native::_c... |         2.53 |         0.02 |            1.00
+|- void at::native::elementwise_kernel<128, 4, at::native::gpu_kernel_impl_no... |         3.36 |         0.03 |            1.00
+|- void at::native::vectorized_elementwise_kernel<4, at::native::(anonymous n... |         3.84 |         0.03 |            2.00
+|- void at::native::(anonymous namespace)::cunn_SoftMaxForward<4, float, floa... |        28.13 |         0.21 |            2.00
+|- void at::native::tensor_kernel_scan_innermost_dim<float, std::plus<float> ... |        46.21 |         0.35 |            1.00
+|- void at::native::vectorized_elementwise_kernel<4, at::native::CUDAFunctorO... |         1.66 |         0.01 |            1.00
+|- void at::native::elementwise_kernel<128, 4, at::native::gpu_kernel_impl<at... |         4.74 |         0.04 |            1.00
+|- void at::native::elementwise_kernel<128, 4, at::native::gpu_kernel_impl_no... |         1.70 |         0.01 |            1.00
+|- void at::native::_scatter_gather_elementwise_kernel<128, 4, at::native::_c... |         7.55 |         0.06 |            1.00
+|- void at::native::(anonymous namespace)::cunn_SoftMaxForward<4, float, floa... |         8.77 |         0.07 |            1.00
+|- void at::native::index_elementwise_kernel<128, 4, at::native::gpu_index_ke... |         4.80 |         0.04 |            1.00
+|- void at::native::(anonymous namespace)::distribution_elementwise_grid_stri... |         4.58 |         0.03 |            1.00
+|- void at::native::vectorized_elementwise_kernel<4, at::native::BinaryFuncto... |         2.75 |         0.02 |            1.00
+|- void at::native::reduce_kernel<512, 1, at::native::ReduceOp<float, at::nat... |        11.62 |         0.09 |            1.00
+|- Memcpy DtoH (Device -> Pageable)                                              |         2.66 |         0.02 |            1.00

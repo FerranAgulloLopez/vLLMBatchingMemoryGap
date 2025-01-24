@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH --job-name=_250_230_8
+#SBATCH -D ./
+#SBATCH --ntasks=1
+#SBATCH --output=benchmarks_simple/definitive_results/initial/llama-2-7b/_250_230_8/log_%j.out
+#SBATCH --error=benchmarks_simple/definitive_results/initial/llama-2-7b/_250_230_8/log_%j.err
+#SBATCH --cpus-per-task=20
+#SBATCH --gres gpu:1
+#SBATCH --time=00:15:00
+module load singularity
+singularity exec --nv --env PYTHONPATH=/usr/local/lib/python3.12/dist-packages --bind /gpfs/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/vllm/core:/usr/local/lib/python3.12/dist-packages/vllm/core --bind /gpfs/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/vllm/engine:/usr/local/lib/python3.12/dist-packages/vllm/engine --bind /gpfs/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/vllm/entrypoints:/usr/local/lib/python3.12/dist-packages/vllm/entrypoints --bind /gpfs/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/vllm/executor:/usr/local/lib/python3.12/dist-packages/vllm/executor --bind /gpfs/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/vllm/lora:/usr/local/lib/python3.12/dist-packages/vllm/lora --bind /gpfs/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/vllm/model_executor:/usr/local/lib/python3.12/dist-packages/vllm/model_executor --bind /gpfs/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/vllm/worker:/usr/local/lib/python3.12/dist-packages/vllm/worker --bind /gpfs/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/vllm/config.py:/usr/local/lib/python3.12/dist-packages/vllm/config.py --bind /gpfs/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/vllm/sequence.py:/usr/local/lib/python3.12/dist-packages/vllm/sequence.py --bind /gpfs/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/vllm/outputs.py:/usr/local/lib/python3.12/dist-packages/vllm/outputs.py /gpfs/scratch/bsc98/bsc098069/llm_benchmarking/images/vllm-benchmark-default-nsight.sif python3 benchmarks_simple/decoding_offline_profiler.py --result-dir='benchmarks_simple/definitive_results/initial/llama-2-7b/_250_230_8' --model=/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/llama/llama-2-7b --json=times --max-num-batched-tokens=4096 --max-num-seqs=1024 --prompt-len='250' --output-len='230' --batch-size='8'

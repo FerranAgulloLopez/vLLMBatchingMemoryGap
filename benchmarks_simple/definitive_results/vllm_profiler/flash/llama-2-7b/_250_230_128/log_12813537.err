@@ -1,0 +1,6 @@
+load SINGULARITY/3.11.5 (PATH)
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:01<00:01,  1.39s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:11<00:00,  6.64s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:11<00:00,  5.85s/it]
+
