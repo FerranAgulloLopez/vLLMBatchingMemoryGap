@@ -1,11 +1,0 @@
-/usr/local/lib/python3.12/dist-packages/vllm/executor/gpu_executor.py:50: UserWarning: Failed to get the IP address, using 0.0.0.0 by default.The value can be set by the environment variable VLLM_HOST_IP or HOST_IP.
-  get_ip(), get_open_port())
-Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
-Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:03<00:03,  3.09s/it]
-Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:11<00:00,  6.44s/it]
-Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:11<00:00,  5.94s/it]
-
-INFO:     Started server process [2525116]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on socket ('0.0.0.0', 42726) (Press CTRL+C to quit)

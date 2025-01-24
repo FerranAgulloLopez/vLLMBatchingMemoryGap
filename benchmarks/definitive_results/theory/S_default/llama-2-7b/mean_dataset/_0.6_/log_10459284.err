@@ -1,8 +1,0 @@
-load SINGULARITY/3.11.5 (PATH)
-/home/bsc/bsc098069/llm_benchmarking/FairnessInLLMAdapterServing/vllm/connections.py:8: RuntimeWarning: Failed to read commit hash:
-No module named 'vllm._version'
-  from vllm.version import __version__ as VLLM_VERSION
-huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
-To disable this warning, you can either:
-	- Avoid using `tokenizers` before the fork if possible
-	- Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)
