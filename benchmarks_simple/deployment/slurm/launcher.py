@@ -49,7 +49,9 @@ def schedule_job(
     exclusive: bool,
     no_effect: bool,
     with_nsight: bool,
-    nsight_args: str
+    nsight_args: str,
+    with_nsight_compute: bool,
+    nsight_compute_args: str,
 ) -> None:
     global \
         EXP_HOME_CODE_DIR, \
@@ -81,6 +83,8 @@ def schedule_job(
     command = f'python3 {EXP_BENCHMARK_EXECUTABLE} {arguments}'
     if with_nsight:
         command = f'nsys profile --output {exp_results_path}/ {nsight_args} ' + command
+    elif with_nsight_compute:
+        command = f'ncu -o {exp_results_path}/ncu_profile {nsight_compute_args} ' + command
     env["EXP_BENCHMARK_COMMAND"] = command
 
     command = f'cat {EXP_SLURM_EXECUTABLE} | envsubst > {exp_results_path}/launcher.sh'
@@ -123,7 +127,9 @@ def main(
         exclusive: bool,
         no_effect: bool,
         with_nsight: bool,
-        nsight_args: str
+        nsight_args: str,
+        with_nsight_compute: bool,
+        nsight_compute_args: str,
 ) -> None:
     global ILLEGAL_PARAMETERS
 
@@ -157,7 +163,9 @@ def main(
             exclusive,
             no_effect,
             with_nsight,
-            nsight_args
+            nsight_args,
+            with_nsight_compute,
+            nsight_compute_args,
         )
 
 
@@ -174,7 +182,11 @@ if __name__ == '__main__':
     parser.add_argument('--default-env-vars', type=str, help='Dictionary with the default env vars')
     parser.add_argument('--with-nsight', default=False, action='store_true', help='Launch with nsight profile')
     parser.add_argument('--nsight-args', default='', type=str, help='Additional nsight arguments')
+    parser.add_argument('--with-nsight-compute', default=False, action='store_true', help='Launch with nsight compute profile')
+    parser.add_argument('--nsight-compute-args', default='', type=str, help='Additional nsight compute arguments')
     args = parser.parse_args()
+
+    assert not (args.with_nsight and args.with_nsight_compute), 'Nsight and Nsight Compute cannot be run together'
 
     default_args = json.loads(args.default_args.replace('\'', '"'))
     test_args = json.loads(args.test_args.replace('\'', '"'))
@@ -200,5 +212,7 @@ if __name__ == '__main__':
         args.exclusive,
         args.no_effect,
         args.with_nsight,
-        args.nsight_args
+        args.nsight_args,
+        args.with_nsight_compute,
+        args.nsight_compute_args,
     )
