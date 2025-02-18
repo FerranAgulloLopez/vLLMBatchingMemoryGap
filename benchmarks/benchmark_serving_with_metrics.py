@@ -101,9 +101,10 @@ def sample_sharegpt_requests(
         dataset = json.load(f)
     # Filter out the conversations with less than 2 turns.
     dataset = [data for data in dataset if len(data["conversations"]) >= 2]
-    # Only keep the first two turns of each conversation.
+    # Only keep the first two turns of each conversation and from parameter.
     dataset = [(data["conversations"][0]["value"],
-                data["conversations"][1]["value"]) for data in dataset]
+                data["conversations"][1]["value"]) for data in dataset
+               if data["conversations"][0]["from"] == "human" and data["conversations"][1]["from"] == "gpt"]
 
     # Shuffle the dataset.
     random.shuffle(dataset)
