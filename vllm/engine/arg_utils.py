@@ -180,6 +180,8 @@ class EngineArgs:
     mm_processor_kwargs: Optional[Dict[str, Any]] = None
     scheduling_policy: Literal["fcfs", "priority"] = "fcfs"
 
+    override_generation_config: Optional[Dict[str, Any]] = None
+
     def __post_init__(self):
         if not self.tokenizer:
             self.tokenizer = self.model
@@ -825,6 +827,13 @@ class EngineArgs:
             'priority (lower value means earlier handling) and time of '
             'arrival deciding any ties).')
 
+        parser.add_argument(
+            "--override-generation-config",
+            type=str,
+            action='append',
+            default=[],
+            help="Overrides or sets generation config with append format e.g. ''--override-generation-config temperature=0.5''")
+
         return parser
 
     @classmethod
@@ -864,6 +873,7 @@ class EngineArgs:
             override_neuron_config=self.override_neuron_config,
             config_format=self.config_format,
             mm_processor_kwargs=self.mm_processor_kwargs,
+            override_generation_config=self.override_generation_config,
         )
 
     def create_load_config(self) -> LoadConfig:

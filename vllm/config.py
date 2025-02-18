@@ -104,6 +104,8 @@ class ModelConfig:
             Defaults to 'auto' which defaults to 'hf'.
         mm_processor_kwargs: Arguments to be forwarded to the model's processor
             for multi-modal data, e.g., image processor.
+        override_generation_config: Override the generation config with the
+            given config.
     """
 
     def __init__(self,
@@ -133,7 +135,9 @@ class ModelConfig:
                  use_async_output_proc: bool = True,
                  override_neuron_config: Optional[Dict[str, Any]] = None,
                  config_format: ConfigFormat = ConfigFormat.AUTO,
-                 mm_processor_kwargs: Optional[Dict[str, Any]] = None) -> None:
+                 mm_processor_kwargs: Optional[Dict[str, Any]] = None,
+                 override_generation_config: Optional[Dict[str, Any]] = None,
+                 ) -> None:
         self.model = model
         self.tokenizer = tokenizer
         self.tokenizer_mode = tokenizer_mode
@@ -162,6 +166,11 @@ class ModelConfig:
         self.hf_config = get_config(self.model, trust_remote_code, revision,
                                     code_revision, rope_scaling, rope_theta,
                                     config_format)
+        for item in override_generation_config:
+            key, value = item.split('=')
+            if hasattr(self.hf_config, key):
+                setattr(self.hf_config, key, int(value))  # TODO refactor to allow multiple types of values, not just ints
+                print(f'Override default parameter {key} with {value}')
         self.hf_text_config = get_hf_text_config(self.hf_config)
         self.hf_image_processor_config = get_hf_image_processor_config(
             self.model, revision)
