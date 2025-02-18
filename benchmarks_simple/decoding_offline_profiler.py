@@ -38,8 +38,10 @@ def check_running_prefills_decodes(seq_groups: List[SequenceGroup], current_stat
         request_id: str = seq_group.request_id
         output_tokens: int = seq_group.get_seqs()[0].get_output_len()
         if current_state is None or request_id not in current_state:
-            if output_tokens <= 1:
+            if output_tokens == 1:
                 running_prefills += 1
+            elif output_tokens == 0:
+                pass
             else:
                 raise ValueError('Something strange happened. A request did both prefill and decode phases in the same step')
         elif output_tokens > current_state[request_id] + 1:
@@ -133,6 +135,8 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
     x = 0
     current_state = None
     while not no_more_prefills:
+        if x > 50:
+            raise Exception('Something strange happened. Prefill phase didn\'t finish in a reasonable time')
         running_prefills, running_decodes, current_state = check_running_prefills_decodes(llm.llm_engine.scheduler[0].running, current_state)
         print(f'PREFILL - {x} -> PREVIOUSLY RUN PREFILLS: {running_prefills}. PREVIOUSLY RUN DECODES: {running_decodes}. RUNNING: {len(llm.llm_engine.scheduler[0].running)}. WAITING: {len(llm.llm_engine.scheduler[0].waiting)}')
         llm.llm_engine.step()
