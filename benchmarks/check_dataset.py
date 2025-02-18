@@ -22,14 +22,22 @@ def sample_sharegpt_requests(
         dataset = json.load(f)
 
     count = 0
+    count_single = 0
     sum_input_length = 0
     sum_output_length = 0
+    wrong_formatted = 0
+    wrong_formatted_single = 0
     for index_dataset, data in enumerate(dataset):
         print(f'Pending {len(dataset) - index_dataset} conversations')
 
         # filter out the conversations with less than 2 turns.
         if len(data['conversations']) < 2:
             continue
+
+        if data['conversations'][0]['from'] == 'human' and data['conversations'][1]['from'] == 'gpt':
+            count_single += 1
+        else:
+            wrong_formatted_single += 1
 
         # only keep the first two turns of each conversation.
         # do nothing
@@ -39,10 +47,10 @@ def sample_sharegpt_requests(
             if index + 1 >= len(data['conversations']):
                 break
 
-            '''if data['conversations'][index]['from'] != 'human':
-                break
+            if data['conversations'][index]['from'] != 'human':
+                wrong_formatted += 1
             if data['conversations'][index + 1]['from'] != 'gpt':
-                break'''
+                wrong_formatted += 1
 
             prompt = data['conversations'][index]['value']
             completion = data['conversations'][index + 1]['value']
@@ -63,8 +71,11 @@ def sample_sharegpt_requests(
     mean_output_length = sum_output_length / count
 
     print(f'Number of valid conversations: {count}')
+    print(f'Number of wrong formatted conversations: {wrong_formatted}')
     print(f'Mean input length: {mean_input_length}')
     print(f'Mean output length: {mean_output_length}')
+    print(f'Count single: {count_single}')
+    print(f'Wrong formatted single: {wrong_formatted_single}')
 
 
 def main():
