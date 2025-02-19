@@ -130,7 +130,7 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
 
     # do prefill phases
     print('\nPREFILL PHASES')
-    init_prefill_time = time.perf_counter()
+    prefill_time: float = 0
     no_more_prefills: bool = False
     x = 0
     current_state = None
@@ -139,7 +139,11 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
             raise Exception('Something strange happened. Prefill phase didn\'t finish in a reasonable time')
         running_prefills, running_decodes, current_state = check_running_prefills_decodes(llm.llm_engine.scheduler[0].running, current_state)
         print(f'PREFILL - {x} -> PREVIOUSLY RUN PREFILLS: {running_prefills}. PREVIOUSLY RUN DECODES: {running_decodes}. RUNNING: {len(llm.llm_engine.scheduler[0].running)}. WAITING: {len(llm.llm_engine.scheduler[0].waiting)}')
+
+        init_time = time.perf_counter()
         llm.llm_engine.step()
+        prefill_time += time.perf_counter() - init_time
+
         x += 1
         if len(current_state) == batch_size:
             prefills_finished: bool = True
@@ -150,11 +154,11 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
                 elif output_tokens > 1:
                     raise Exception('Something unexpected happened, a decoding occured during prefill phases')
             no_more_prefills = prefills_finished
-    print(f'Prefill elapsed time: {time.perf_counter() - init_prefill_time} seconds')
+    print(f'Prefill elapsed time: {prefill_time} seconds')
 
     # do decode phases
     print('\nDECODE PHASES')
-    init_decode_time = time.perf_counter()
+    decode_time: float = 0
     decode_profs = []
     for x in range(args.output_len - 1):
         if len(llm.llm_engine.scheduler[0].swapped) > 0 or len(llm.llm_engine.scheduler[0].waiting) > 0:
@@ -162,12 +166,20 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
         running_prefills, running_decodes, current_state = check_running_prefills_decodes(llm.llm_engine.scheduler[0].running, current_state)
         print(f'DECODE - {x} -> PREVIOUSLY RUN PREFILLS: {running_prefills}. PREVIOUSLY RUN DECODES: {running_decodes}. RUNNING: {len(llm.llm_engine.scheduler[0].running)}. WAITING: {len(llm.llm_engine.scheduler[0].waiting)}')
         if args.without_profiler:
+
+            init_time = time.perf_counter()
             llm.llm_engine.step()
+            decode_time += time.perf_counter() - init_time
+
         else:
             with layerwise_profile() as decode_prof:
+
+                init_time = time.perf_counter()
                 llm.llm_engine.step()
+                decode_time += time.perf_counter() - init_time
+
             decode_profs.append(decode_prof)
-    print(f'Decode elapsed time: {time.perf_counter() - init_decode_time} seconds')
+    print(f'Decode elapsed time: {decode_time} seconds')
 
     decode_results_list = [prof.results for prof in decode_profs]
     has_decode = len(decode_results_list) > 0
