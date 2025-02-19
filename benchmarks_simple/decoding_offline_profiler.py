@@ -64,7 +64,7 @@ def get_dtype(dtype: str):
 
 def run_profile(context: ProfileContext, csv_output: Optional[str],
                 json_output: Optional[str]):
-    init_time = time.perf_counter()
+    global_init_time = time.perf_counter()
 
     print("Run profile with:")
     for key, value in asdict(context).items():
@@ -243,7 +243,7 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
         print("Traces saved as prefill.json and decode_1.json, etc."
               f" in folder {folder_path}")
 
-    print(f'Total elapsed time: {time.perf_counter() - init_time} seconds')
+    print(f'Total elapsed time: {time.perf_counter() - global_init_time} seconds')
 
 
 if __name__ == "__main__":
