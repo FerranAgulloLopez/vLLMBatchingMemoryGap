@@ -147,12 +147,12 @@ def plot_throughput_latency(
     plt.style.use('ggplot')
     # plt.style.use('seaborn-v0_8')
 
-    '''meh = __prepare_lines(
+    meh = __prepare_lines(
         all_model_results,
         'set_batch_size',
         'throughput',
         'model'
-    )'''
+    )
 
     cols = []
     cols.append(__prepare_lines(
