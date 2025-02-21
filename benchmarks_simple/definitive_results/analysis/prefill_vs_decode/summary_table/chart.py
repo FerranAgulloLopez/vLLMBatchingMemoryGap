@@ -28,14 +28,20 @@ def cut_metric_values_timewise(metric_x: np.ndarray, metric_y: np.ndarray, init_
     return metric_x[init_index:end_index], metric_y[init_index:end_index]
 
 
-def nsight_extract_gpu_metric_array(path: str, metric: str):
+def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str]):
     try:
         conn = sqlite3.connect(path)
+        metric_names = ''
+        for metric in metrics:
+            if metric_names == '':
+                metric_names += f"metricName == '{metric}'"
+            else:
+                metric_names += f" OR metricName == '{metric}'"
         query = f"""
-                SELECT timestamp, value
+                SELECT metricName, timestamp, value
                 FROM GPU_METRICS
                 JOIN TARGET_INFO_GPU_METRICS USING (metricId)
-                WHERE (metricName == '{metric}')
+                WHERE ({metric_names})
             """
         df = pd.read_sql_query(query, conn)
         conn.close()
@@ -45,11 +51,15 @@ def nsight_extract_gpu_metric_array(path: str, metric: str):
     if df.empty:
         raise Exception('Nothing found in SQLite database')
 
-    df = df.to_numpy()
-    metric_x = df[:, 0]
-    metric_y = df[:, 1]
+    metric_results = {}
+    for metric in metrics:
+        rows = df.loc[df['metricName'] == metric].drop(columns=['metricName']).to_numpy()
+        metric_results[metric] = {
+            'x': rows[:, 0],
+            'y': rows[:, 1]
+        }
 
-    return metric_x, metric_y
+    return metric_results
 
 
 def nsight_extract_kernel_start_values(path: str, kernel_name: str):
@@ -123,9 +133,15 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
     if found is not None:
         flash_attention = False
 
-    # extract complete SM occupancy and DRAM bandwidth
-    dram_read_x, dram_read_y = nsight_extract_gpu_metric_array(nsight_sqlite_file, 'DRAM Read Bandwidth [Throughput %]')
-    sm_unocc_x, sm_unocc_y = nsight_extract_gpu_metric_array(nsight_sqlite_file, 'Unallocated Warps in Active SMs [Throughput %]')
+    # extract complete GPU metrics
+    gpu_metrics = [
+        'SMs Active [Throughput %]',
+        'Compute Warps in Flight [Throughput %]',
+        'Unallocated Warps in Active SMs [Throughput %]',
+        'DRAM Read Bandwidth [Throughput %]',
+        'DRAM Write Bandwidth [Throughput %]'
+    ]
+    gpu_metrics_values = nsight_extract_gpu_metric_arrays(nsight_sqlite_file, gpu_metrics)
 
     # find prefill start -> start of flash_fwd_kernel
     kernel_start_values = nsight_extract_kernel_start_values(nsight_sqlite_file, 'reshape_and_cache_flash_kernel' if flash_attention else 'reshape_and_cache_kernel')
@@ -154,29 +170,20 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
     ax.legend()
     fig.savefig("/home/ferran/Downloads/decode.png")'''
 
-    # extract prefill average and max SM occupancy
-    _, sm_unocc_y_prefill = cut_metric_values_timewise(sm_unocc_x, sm_unocc_y, prefill_start, decode_start)
-    sm_unocc_y_prefill = sm_unocc_y_prefill[sm_unocc_y_prefill != 0]
-    output['prefill_average_unocc'] = float(np.mean(sm_unocc_y_prefill))
-    output['prefill_max_unocc'] = float(np.max(sm_unocc_y_prefill))
-
-    # extract prefill average and max DRAM bandwidth
-    _, dram_read_y_prefill = cut_metric_values_timewise(dram_read_x, dram_read_y, prefill_start, decode_start)
-    dram_read_y_prefill = dram_read_y_prefill[dram_read_y_prefill != 0]
-    output['prefill_average_dram_read'] = float(np.mean(dram_read_y_prefill))
-    output['prefill_max_dram_read'] = float(np.max(dram_read_y_prefill))
-
-    # extract decode average and max SM occupancy
-    _, sm_unocc_y_decode = cut_metric_values_timewise(sm_unocc_x, sm_unocc_y, decode_start, decode_end)
-    sm_unocc_y_decode = sm_unocc_y_decode[sm_unocc_y_decode != 0]
-    output['decode_average_unocc'] = float(np.mean(sm_unocc_y_decode))
-    output['decode_max_unocc'] = float(np.max(sm_unocc_y_decode))
-
-    # extract decode average and max DRAM bandwidth
-    _, dram_read_y_decode = cut_metric_values_timewise(dram_read_x, dram_read_y, decode_start, decode_end)
-    dram_read_y_decode = dram_read_y_decode[dram_read_y_decode != 0]
-    output['decode_average_dram_read'] = float(np.mean(dram_read_y_decode))
-    output['decode_max_dram_read'] = float(np.max(dram_read_y_decode))
+    # extract prefill and decode GPU metric values
+    gpu_metrics_values_prefill = {}
+    gpu_metrics_values_decode = {}
+    for gpu_metric in gpu_metrics:
+        x_values = gpu_metrics_values[gpu_metric]['x']
+        y_values = gpu_metrics_values[gpu_metric]['y']
+        _, y_values_prefill = cut_metric_values_timewise(x_values, y_values, prefill_start, decode_start)
+        _, y_values_decode = cut_metric_values_timewise(x_values, y_values, decode_start, decode_end)
+        y_values_prefill = y_values_prefill[y_values_prefill != 0]
+        y_values_decode = y_values_decode[y_values_decode != 0]
+        gpu_metrics_values_prefill[gpu_metric] = y_values_prefill
+        gpu_metrics_values_decode[gpu_metric] = y_values_decode
+    output['gpu_metrics_values_prefill'] = gpu_metrics_values_prefill
+    output['gpu_metrics_values_decode'] = gpu_metrics_values_decode
 
     return output
 
@@ -264,6 +271,9 @@ def print_table(
 ) -> None:
     plt.style.use('ggplot')
 
+    def print_metric_value(value: float):
+        return '{:.2f}'.format(value)
+
     if all_model_results is not None:
         import pickle
         with open('/home/ferran/Downloads/meh', 'wb') as file:
@@ -273,56 +283,27 @@ def print_table(
         with open('/home/ferran/Downloads/meh', 'rb') as file:
             all_model_results = pickle.load(file)
 
-    decode_importance = __prepare_lines(
-        all_model_results,
-        'batch_size',
-        'decode_importance',
-        'model'
-    )
+    prefill_importance = [1 - item['decode_importance'] for item in all_model_results]
+    print(f'Prefill Importance: {print_metric_value(float(np.mean(prefill_importance)))}')
+    decode_importance = [item['decode_importance'] for item in all_model_results]
+    print(f'Decode Importance: {print_metric_value(float(np.mean(decode_importance)))}')
 
-    sm_unocc_average = __prepare_lines(
-        all_model_results,
-        'prefill_average_unocc',
-        'decode_average_unocc',
-        'model'
-    )
-
-    sm_unocc_max = __prepare_lines(
-        all_model_results,
-        'prefill_max_unocc',
-        'decode_max_unocc',
-        'model'
-    )
-
-    dram_read_average = __prepare_lines(
-        all_model_results,
-        'prefill_average_dram_read',
-        'decode_average_dram_read',
-        'model'
-    )
-
-    dram_read_max = __prepare_lines(
-        all_model_results,
-        'prefill_max_dram_read',
-        'decode_max_dram_read',
-        'model'
-    )
-
-    decode_importance = [item[2] for item in decode_importance]
-    sm_unocc_average_prefill = [item[1] for item in sm_unocc_average]
-    sm_unocc_average_decode = [item[2] for item in sm_unocc_average]
-    sm_unocc_max_prefill = [item[1] for item in sm_unocc_max]
-    sm_unocc_max_decode = [item[2] for item in sm_unocc_max]
-    dram_read_average_prefill = [item[1] for item in dram_read_average]
-    dram_read_average_decode = [item[2] for item in dram_read_average]
-    dram_read_max_prefill = [item[1] for item in dram_read_max]
-    dram_read_max_decode = [item[2] for item in dram_read_max]
-
-    print(f'Decode Importance: {float(np.mean(decode_importance))}')
-    print(f'SM Unoccupancy Average. Prefill: {float(np.mean(sm_unocc_average_prefill))}. Decode: {float(np.mean(sm_unocc_average_decode))}')
-    print(f'SM Unoccupancy Max. Prefill: {float(np.mean(sm_unocc_max_prefill))}. Decode: {float(np.mean(sm_unocc_max_decode))}')
-    print(f'DRAM Read Average. Prefill: {float(np.mean(dram_read_average_prefill))}. Decode: {float(np.mean(dram_read_average_decode))}')
-    print(f'DRAM Read Max. Prefill: {float(np.mean(dram_read_max_prefill))}. Decode: {float(np.mean(dram_read_max_decode))}')
+    for metric in all_model_results[0]['gpu_metrics_values_prefill'].keys():
+        prefill_sum_average = 0
+        prefill_sum_max = 0
+        decode_sum_max = 0
+        decode_sum_average = 0
+        count = 0
+        for model_results in all_model_results:
+            prefill_values = model_results['gpu_metrics_values_prefill'][metric]
+            decode_values = model_results['gpu_metrics_values_decode'][metric]
+            prefill_sum_average += np.mean(prefill_values)
+            prefill_sum_max += np.max(prefill_values)
+            decode_sum_average += np.mean(decode_values)
+            decode_sum_max += np.max(decode_values)
+            count += 1
+        print(f'{metric} Average. Prefill: {print_metric_value(prefill_sum_average / count)}. Decode: {print_metric_value(decode_sum_average / count)}')
+        print(f'{metric} Max. Prefill: {print_metric_value(prefill_sum_max / count)}. Decode: {print_metric_value(decode_sum_max / count)}')
 
 
 def main():
