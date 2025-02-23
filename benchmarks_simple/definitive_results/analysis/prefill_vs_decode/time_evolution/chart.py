@@ -154,7 +154,7 @@ def plot_time_evolution(
     patches = axs.bar(decode_x, decode_y, bottom=prefill_y, label='decode time')
     axs.bar_label(patches, ['{0:.1f}%'.format(decode_y[index] / (prefill_y[index] + decode_y[index]) * 100) for index in range(len(prefill_x))], label_type='center')
 
-    axs.set_xlabel('Batch size (reqs)')
+    axs.set_xlabel('Average batch size (reqs)')
     axs.set_ylabel('Time (s)')
     axs.legend(loc='upper left', fontsize=10)
 
