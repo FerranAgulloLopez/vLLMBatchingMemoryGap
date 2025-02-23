@@ -1,0 +1,13 @@
+load SINGULARITY/3.11.5 (PATH)
+WARNING: CPU IP/backtrace sampling not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+WARNING: CPU context switch tracing not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+Loading safetensors checkpoint shards:   0% Completed | 0/3 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  33% Completed | 1/3 [00:26<00:52, 26.33s/it]
+Loading safetensors checkpoint shards:  67% Completed | 2/3 [00:43<00:21, 21.03s/it]
+Loading safetensors checkpoint shards: 100% Completed | 3/3 [01:10<00:00, 23.76s/it]
+Loading safetensors checkpoint shards: 100% Completed | 3/3 [01:10<00:00, 23.55s/it]
+
