@@ -12,5 +12,3 @@ From: vllm:latest
     apt update
     apt install -y nsight-systems-cli
     apt install -y nsight-compute
-    export PATH=$PATH:/opt/nvidia/nsight-compute/2025.1.0
-

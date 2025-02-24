@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass
 from typing import Optional, List, Tuple
 
 import torch
+# import torch.cuda.nvtx as nvtx
 
 from vllm import LLM, SamplingParams
 from vllm.engine.arg_utils import EngineArgs
@@ -64,6 +65,11 @@ def get_dtype(dtype: str):
 
 def run_profile(context: ProfileContext, csv_output: Optional[str],
                 json_output: Optional[str]):
+    if args.include_nvtx_regions:
+        assert args.without_profiler, 'NVTX regions only implemented when not using vLLM profiler'
+        rng = torch.cuda.nvtx.range_start(f'Initialization')
+
+
     global_init_time = time.perf_counter()
 
     print("Run profile with:")
@@ -126,6 +132,8 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
 
     print("Profile run ...")
     add_requests()
+    if args.include_nvtx_regions:
+        torch.cuda.nvtx.range_end(rng)
     print(f'Initialization elapsed time: {time.perf_counter() - global_init_time} seconds')
 
     # do prefill phases
@@ -140,9 +148,15 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
         running_prefills, running_decodes, current_state = check_running_prefills_decodes(llm.llm_engine.scheduler[0].running, current_state)
         print(f'PREFILL - {x} -> PREVIOUSLY RUN PREFILLS: {running_prefills}. PREVIOUSLY RUN DECODES: {running_decodes}. RUNNING: {len(llm.llm_engine.scheduler[0].running)}. WAITING: {len(llm.llm_engine.scheduler[0].waiting)}')
 
+        if args.include_nvtx_regions:
+            rng = torch.cuda.nvtx.range_start(f'PrefillStep{x}')
+
         init_time = time.perf_counter()
         llm.llm_engine.step()
         prefill_time += time.perf_counter() - init_time
+
+        if args.include_nvtx_regions:
+            torch.cuda.nvtx.range_end(rng)
 
         x += 1
         if len(current_state) == batch_size:
@@ -167,9 +181,15 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
         print(f'DECODE - {x} -> PREVIOUSLY RUN PREFILLS: {running_prefills}. PREVIOUSLY RUN DECODES: {running_decodes}. RUNNING: {len(llm.llm_engine.scheduler[0].running)}. WAITING: {len(llm.llm_engine.scheduler[0].waiting)}')
         if args.without_profiler:
 
+            if args.include_nvtx_regions:
+                rng = torch.cuda.nvtx.range_start(f'DecodeStep{x}')
+
             init_time = time.perf_counter()
             llm.llm_engine.step()
             decode_time += time.perf_counter() - init_time
+
+            if args.include_nvtx_regions:
+                torch.cuda.nvtx.range_end(rng)
 
         else:
             with layerwise_profile() as decode_prof:
@@ -320,6 +340,12 @@ Profile a model
         action="store_true",
         default=False,
         help="disable profiler",
+    )
+    parser.add_argument(
+        "--include-nvtx-regions",
+        action="store_true",
+        default=False,
+        help="include nvtx regions to profile",
     )
 
     EngineArgs.add_cli_args(parser)
