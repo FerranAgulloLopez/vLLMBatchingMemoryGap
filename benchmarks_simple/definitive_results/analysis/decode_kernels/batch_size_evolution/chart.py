@@ -2,6 +2,8 @@ import os
 import re
 import glob
 import sqlite3
+import shlex
+import subprocess
 import pandas as pd
 from typing import List, Tuple, Dict, Set, Any
 import matplotlib.pyplot as plt
@@ -12,24 +14,29 @@ import numpy as np
 # MAYBE THE REPORT IS MISSING BECAUSE OF REPO SIZE CONSTRAINTS. IN THAT CASE, RERUN THE EXPS WITH THE PROVIDED CONFIG
 
 
-def cut_metric_values_timewise(metric_x: np.ndarray, metric_y: np.ndarray, init_cut: float, end_cut: float):
-    assert init_cut < end_cut
-    assert metric_x[0] < init_cut < metric_x[-1]
-    assert metric_x[0] < end_cut < metric_x[-1]
-    init_index: int = None
-    end_index: int = None
-    iter_index: int = 0
-    while (init_index is None or end_index is None) and iter_index < len(metric_x):
-        if init_index is None and init_cut < metric_x[iter_index]:
-            init_index = iter_index
-        if end_index is None and end_cut < metric_x[iter_index]:
-            end_index = iter_index
-        iter_index += 1
-    assert init_cut < end_cut
-    return metric_x[init_index:end_index], metric_y[init_index:end_index]
+def create_sqlite_databases(path: str):
+    for subdir, dirs, files in os.walk(path):
+        for folder in dirs:
+            filenames: List[str] = glob.glob(os.path.join(path, folder, 'log_*.err'))
+            if len(filenames) != 1:
+                raise ValueError(f'More than one output result file or none {filenames} for path {path}')
+            with open(filenames[0], 'r') as fp:
+                if len(fp.readlines()) > 24:
+                    raise ValueError('Some error happened', filenames[0])
+
+            command = f'nsys export --separate-strings yes --type sqlite --output {os.path.join(path, folder)}/.nsys-rep.sqlite --force-overwrite true {os.path.join(path, folder)}/.nsys-rep'
+            print(command)
+            result = subprocess.run(
+                shlex.split(command),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
+            print(result.stdout)
+            print(result.stderr)
 
 
-def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str]):
+def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str], start: float, end: float):
     try:
         conn = sqlite3.connect(path)
         metric_names = ''
@@ -42,7 +49,7 @@ def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str]):
                 SELECT metricName, timestamp, value
                 FROM GPU_METRICS
                 JOIN TARGET_INFO_GPU_METRICS USING (metricId)
-                WHERE ({metric_names})
+                WHERE ({metric_names}) AND timestamp > {start} AND timestamp < {end}
             """
         df = pd.read_sql_query(query, conn)
         conn.close()
@@ -63,15 +70,14 @@ def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str]):
     return metric_results
 
 
-def nsight_extract_kernel_start_values(path: str, kernel_name: str):
+def nsight_extract_prefill_decode_start_end_times(path: str):
     try:
         conn = sqlite3.connect(path)
         query = f"""
-                SELECT start, end
-                FROM CUPTI_ACTIVITY_KIND_KERNEL
-                JOIN StringIds ON CUPTI_ACTIVITY_KIND_KERNEL.shortName = StringIds.id
-                WHERE StringIds.value == '{kernel_name}' AND streamId == 7
-            """
+                SELECT text, start
+                FROM NVTX_EVENTS
+                WHERE eventType == 34
+            """ # type 34 correspond to mark events
         df = pd.read_sql_query(query, conn)
         conn.close()
     except Exception as e:
@@ -82,7 +88,25 @@ def nsight_extract_kernel_start_values(path: str, kernel_name: str):
 
     df = df.to_numpy()
 
-    return df[:, 0]
+    prefill_start = None
+    prefill_end = None
+    decode_start = None
+    decode_end = None
+    for index in range(np.shape(df)[0]):
+        if df[index, 0] == 'PrefillStart':
+            prefill_start = float(df[index, 1])
+        elif df[index, 0] == 'PrefillEnd':
+            prefill_end = float(df[index, 1])
+        elif df[index, 0] == 'DecodingStart':
+            decode_start = float(df[index, 1])
+        elif df[index, 0] == 'DecodingEnd':
+            decode_end = float(df[index, 1])
+    assert prefill_start is not None
+    assert prefill_end is not None
+    assert decode_start is not None
+    assert decode_end is not None
+
+    return prefill_start, prefill_end, decode_start, decode_end
 
 
 def extract_experiment_metric(path: str) -> Dict[str, float]:
@@ -117,7 +141,10 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
     if found is not None:
         flash_attention = False
 
-    # extract complete GPU metrics
+    # find prefill/decode start/end
+    prefill_start, prefill_end, decode_start, decode_end = nsight_extract_prefill_decode_start_end_times(nsight_sqlite_file)
+
+    # extract GPU metrics
     gpu_metrics = [
         'SMs Active [Throughput %]',
         'Compute Warps in Flight [Throughput %]',
@@ -125,45 +152,15 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
         'DRAM Read Bandwidth [Throughput %]',
         'DRAM Write Bandwidth [Throughput %]'
     ]
-    gpu_metrics_values = nsight_extract_gpu_metric_arrays(nsight_sqlite_file, gpu_metrics)
-
-    # find prefill start -> start of flash_fwd_kernel
-    kernel_start_values = nsight_extract_kernel_start_values(nsight_sqlite_file, 'reshape_and_cache_flash_kernel' if flash_attention else 'reshape_and_cache_kernel')
-    prefill_start = np.min(kernel_start_values)
-
-    # find decode start and end -> start of flash_fwd_splitkv_kernel
-    kernel_start_values = nsight_extract_kernel_start_values(nsight_sqlite_file, 'flash_fwd_splitkv_kernel' if flash_attention else 'paged_attention_v1_kernel')
-    decode_start = np.min(kernel_start_values)
-    decode_end = np.max(kernel_start_values)
-
-    '''fig, ax = plt.subplots()
-    meh = cut_metric_values_timewise(dram_read_x, dram_read_y, prefill_start, decode_start)
-    ax.plot(meh[0], np.convolve(meh[1], [0.05] * 20, 'same'), label='DRAM read')
-    meh = cut_metric_values_timewise(sm_unocc_x, sm_unocc_y, prefill_start, decode_start)
-    ax.plot(meh[0], np.convolve(meh[1], [0.05] * 20, 'same'), label='SM UnOccupancy')
-    ax.grid()
-    ax.legend()
-    fig.savefig("/home/ferran/Downloads/prefill.png")
-
-    fig, ax = plt.subplots()
-    meh = cut_metric_values_timewise(dram_read_x, dram_read_y, decode_start, decode_end)
-    ax.plot(meh[0], meh[1], label='DRAM read')
-    meh = cut_metric_values_timewise(sm_unocc_x, sm_unocc_y, decode_start, decode_end)
-    ax.plot(meh[0], meh[1], label='SM UnOccupancy')
-    ax.grid()
-    ax.legend()
-    fig.savefig("/home/ferran/Downloads/decode.png")'''
+    gpu_metrics_values_prefill_raw = nsight_extract_gpu_metric_arrays(nsight_sqlite_file, gpu_metrics, prefill_start, prefill_end)
+    gpu_metrics_values_decode_raw = nsight_extract_gpu_metric_arrays(nsight_sqlite_file, gpu_metrics, decode_start, decode_end)
 
     # extract prefill and decode GPU metric values
     gpu_metrics_values_prefill = {}
     gpu_metrics_values_decode = {}
     for gpu_metric in gpu_metrics:
-        x_values = gpu_metrics_values[gpu_metric]['x']
-        y_values = gpu_metrics_values[gpu_metric]['y']
-        _, y_values_prefill = cut_metric_values_timewise(x_values, y_values, prefill_start, decode_start)
-        _, y_values_decode = cut_metric_values_timewise(x_values, y_values, decode_start, decode_end)
-        y_values_prefill = y_values_prefill[y_values_prefill != 0]
-        y_values_decode = y_values_decode[y_values_decode != 0]
+        y_values_prefill = gpu_metrics_values_prefill_raw[gpu_metric]['y']
+        y_values_decode = gpu_metrics_values_decode_raw[gpu_metric]['y']
         gpu_metrics_values_prefill[gpu_metric] = y_values_prefill
         gpu_metrics_values_decode[gpu_metric] = y_values_decode
     output['gpu_metrics_values_prefill'] = gpu_metrics_values_prefill
@@ -257,11 +254,11 @@ def plot_batch_size_evolution(
 
     if all_model_results is not None:
         import pickle
-        with open('/home/ferran/Downloads/meh', 'wb') as file:
+        with open('/home/ferran/Downloads/decode_kernels_batch_size_evolution', 'wb') as file:
             pickle.dump(all_model_results, file)
     else:
         import pickle
-        with open('/home/ferran/Downloads/meh', 'rb') as file:
+        with open('/home/ferran/Downloads/decode_kernels_batch_size_evolution', 'rb') as file:
             all_model_results = pickle.load(file)
 
     nrows = 2
@@ -329,20 +326,8 @@ def plot_batch_size_evolution(
     assert all_model_results[iter_index]['batch_size'] == 512
 
     results = all_model_results[iter_index]
-    start_index = 0
-    end_index = 750
-
-    def conv1d_strided(input_array, kernel, stride):  # extracted from chatGPT4
-        input_len = input_array.shape[0]
-        kernel_len = kernel.shape[0]
-        output_len = (input_len - kernel_len) // stride + 1
-        output = np.zeros(output_len)
-
-        for i in range(output_len):
-            region = input_array[i * stride:i * stride + kernel_len]
-            output[i] = np.sum(region * kernel)
-
-        return output
+    start_index = 30
+    end_index = 1080
 
     def max_pool1d_strided(input_array, kernel_len, stride):  # extracted from chatGPT4
         input_len = input_array.shape[0]
@@ -378,19 +363,22 @@ def plot_batch_size_evolution(
 
 
 def main():
-    '''model_results: List[Dict[str, Any]] = []
+    '''for model in ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
+        create_sqlite_databases(model)'''
+
+    model_results: List[Dict[str, Any]] = []
     for model in ['opt-1.3b']:
         model_results += extract_results(model, model)
 
     plot_batch_size_evolution(
         model_results,
         '.'
-    )'''
+    )
 
-    plot_batch_size_evolution(
+    '''plot_batch_size_evolution(
         None,
         '.'
-    )
+    )'''
 
 
 if __name__ == '__main__':
