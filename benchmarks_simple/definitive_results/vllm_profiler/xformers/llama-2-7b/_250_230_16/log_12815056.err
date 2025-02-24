@@ -1,10 +1,0 @@
-load SINGULARITY/3.11.5 (PATH)
-/usr/local/lib/python3.12/dist-packages/xformers/ops/fmha/flash.py:211: FutureWarning: `torch.library.impl_abstract` was renamed to `torch.library.register_fake`. Please use that instead; we will remove `torch.library.impl_abstract` in a future version of PyTorch.
-  @torch.library.impl_abstract("xformers_flash::flash_fwd")
-/usr/local/lib/python3.12/dist-packages/xformers/ops/fmha/flash.py:344: FutureWarning: `torch.library.impl_abstract` was renamed to `torch.library.register_fake`. Please use that instead; we will remove `torch.library.impl_abstract` in a future version of PyTorch.
-  @torch.library.impl_abstract("xformers_flash::flash_bwd")
-Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
-Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:01<00:01,  1.40s/it]
-Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:05<00:00,  2.88s/it]
-Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:05<00:00,  2.66s/it]
-
