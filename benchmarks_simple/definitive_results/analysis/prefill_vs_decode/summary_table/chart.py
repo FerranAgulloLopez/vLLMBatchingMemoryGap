@@ -11,23 +11,6 @@ import numpy as np
 # MAYBE THE REPORT IS MISSING BECAUSE OF REPO SIZE CONSTRAINTS. IN THAT CASE, RERUN THE EXPS WITH THE PROVIDED CONFIG
 
 
-def cut_metric_values_timewise(metric_x: np.ndarray, metric_y: np.ndarray, init_cut: float, end_cut: float):
-    assert init_cut < end_cut
-    assert metric_x[0] < init_cut < metric_x[-1]
-    assert metric_x[0] < end_cut < metric_x[-1]
-    init_index: int = None
-    end_index: int = None
-    iter_index: int = 0
-    while (init_index is None or end_index is None) and iter_index < len(metric_x):
-        if init_index is None and init_cut < metric_x[iter_index]:
-            init_index = iter_index
-        if end_index is None and end_cut < metric_x[iter_index]:
-            end_index = iter_index
-        iter_index += 1
-    assert init_cut < end_cut
-    return metric_x[init_index:end_index], metric_y[init_index:end_index]
-
-
 def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str], start: float, end: float):
     try:
         conn = sqlite3.connect(path)
@@ -189,8 +172,6 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
     for gpu_metric in gpu_metrics:
         y_values_prefill = gpu_metrics_values_prefill_raw[gpu_metric]['y']
         y_values_decode = gpu_metrics_values_decode_raw[gpu_metric]['y']
-        '''y_values_prefill = y_values_prefill[y_values_prefill != 0]
-        y_values_decode = y_values_decode[y_values_decode != 0]'''
         gpu_metrics_values_prefill[gpu_metric] = y_values_prefill
         gpu_metrics_values_decode[gpu_metric] = y_values_decode
     output['gpu_metrics_values_prefill'] = gpu_metrics_values_prefill
