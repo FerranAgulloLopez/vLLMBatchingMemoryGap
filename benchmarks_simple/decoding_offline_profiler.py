@@ -149,6 +149,8 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
         print(f'PREFILL - {x} -> PREVIOUSLY RUN PREFILLS: {running_prefills}. PREVIOUSLY RUN DECODES: {running_decodes}. RUNNING: {len(llm.llm_engine.scheduler[0].running)}. WAITING: {len(llm.llm_engine.scheduler[0].waiting)}')
 
         if args.include_nvtx_regions:
+            if x == 0:
+                torch.cuda.nvtx.mark('PrefillStart')
             rng = torch.cuda.nvtx.range_start(f'PrefillStep{x}')
 
         init_time = time.perf_counter()
@@ -168,6 +170,9 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
                 elif output_tokens > 1:
                     raise Exception('Something unexpected happened, a decoding occured during prefill phases')
             no_more_prefills = prefills_finished
+
+        if args.include_nvtx_regions and no_more_prefills:
+            torch.cuda.nvtx.mark('PrefillEnd')
     print(f'Prefill elapsed time: {prefill_time} seconds')
 
     # do decode phases
@@ -182,6 +187,8 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
         if args.without_profiler:
 
             if args.include_nvtx_regions:
+                if x == 0:
+                    torch.cuda.nvtx.mark('DecodingStart')
                 rng = torch.cuda.nvtx.range_start(f'DecodeStep{x}')
 
             init_time = time.perf_counter()
@@ -190,6 +197,8 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
 
             if args.include_nvtx_regions:
                 torch.cuda.nvtx.range_end(rng)
+                if x == (args.output_len - 2):
+                    torch.cuda.nvtx.mark('DecodingEnd')
 
         else:
             with layerwise_profile() as decode_prof:
