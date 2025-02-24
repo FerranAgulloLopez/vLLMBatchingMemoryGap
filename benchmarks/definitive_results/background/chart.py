@@ -88,6 +88,7 @@ def extract_results(path: str, model: str) -> List[Dict[str, float]]:
                         error_message += 'Port bind error'
                         rerun_errors.append(os.path.join(path, folder))
                     else:
+                        print(e)
                         error_message += 'Unknown error'
                         unknown_errors += 1
                 # print(error_message)
@@ -142,118 +143,114 @@ def __prepare_lines(results: List[Dict[str, float]], x_axis: str, y_axis: str, s
 def plot_throughput_latency(
         all_model_results: List[Dict[str, float]],
         path: str,
-        type: str
+        plot_type: str
 ) -> None:
-    plt.style.use('ggplot')
-    # plt.style.use('seaborn-v0_8')
+    # Consistent plot settings
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 14,
+        'axes.titlesize': 18,
+        'axes.labelsize': 17,
+        'xtick.labelsize': 14,
+        'ytick.labelsize': 14,
+        'legend.fontsize': 14,
+        'lines.linewidth': 2.0,
+        'mathtext.default': 'regular',
+        'axes.grid': True,
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.4,
+        'figure.figsize': (14, 5)  # Adjusted for balanced horizontal layout
+    })
 
-    meh = __prepare_lines(
-        all_model_results,
-        'set_batch_size',
-        'throughput',
-        'model'
-    )
+    # Prepare results for throughput and latency
+    cols = [
+        __prepare_lines(all_model_results, 'batch_size', 'throughput', 'model'),
+        __prepare_lines(all_model_results, 'batch_size', 'latency', 'model')
+    ]
 
-    cols = []
-    cols.append(__prepare_lines(
-        all_model_results,
-        'batch_size',
-        'throughput',
-        'model'
-    ))
-    cols.append(__prepare_lines(
-        all_model_results,
-        'batch_size',
-        'latency',
-        'model'
-    ))
+    # Create subplots for horizontal or vertical layout
+    if plot_type == 'horizontal':
+        fig, axs = plt.subplots(1, 2, figsize=(10, 4), sharex=True, constrained_layout=True)
+    elif plot_type == 'vertical':
+        fig, axs = plt.subplots(2, 1, figsize=(7, 9), sharex=True, constrained_layout=True)
+    else:
+        raise ValueError("Invalid plot type. Choose 'horizontal' or 'vertical'.")
 
-    if type == 'horizontal':
-        nrows = 1
-        ncols = 2
-        fig, axs = plt.subplots(nrows, ncols, figsize=(ncols * 6, nrows * 4), sharex=True)
-        fig.tight_layout()
-        # fig.subplots_adjust(wspace=0)
+    # Ensure consistent plot background and spine formatting
+    for ax in axs:
+        ax.set_facecolor('white')
+        for spine in ax.spines.values():
+            spine.set_color('black')
+            spine.set_linewidth(1.0)
+        ax.tick_params(axis='both', colors='black', direction='in')
 
-        params = {'mathtext.default': 'regular'}
-        plt.rcParams.update(params)
+    # Plot configuration
+    col_labels = ['Throughput (tokens/s)', 'Latency (ms)']
+    markers = ['o', 's', 'D', '^']
+    colors = ['#0072B2', '#E69F00', '#009E73', '#D55E00']
 
-        col_labels = ['Throughput (toks/s)', 'Latency (ms)']
-        for index_x, col_results in enumerate(cols):
-            for model, x_line, y_line in col_results:
-                line = axs[index_x].plot(
-                    x_line,
-                    y_line,
-                    marker='o',
-                    label=model
-                )[0]
-                if len(x_line) < 10:
-                    x_final_point = x_line[-1] + 10
-                    y_final_point = y_line[-1] + (y_line[-1] - y_line[-2]) / 5
-                    axs[index_x].plot(
-                        x_line[-1:] + [x_final_point],
-                        y_line[-1:] + [y_final_point],
-                        marker='x',
-                        markevery=[1],
-                        linestyle='dotted',
-                        color=line.get_color()
-                    )
-            axs[index_x].set_ylabel(col_labels[index_x], fontsize=10)
-            axs[index_x].set_xlabel('Average batch size (reqs)', fontsize=10)
+    for idx, (col_results, ax) in enumerate(zip(cols, axs)):
+        desired_order = ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']
+        col_results = sorted(col_results, key=lambda x: desired_order.index(x[0]))
 
-            handles, labels = axs[index_x].get_legend_handles_labels()
-            handles = [handles[2], handles[3], handles[1], handles[0]]
-            labels = [labels[2], labels[3], labels[1], labels[0]]
-            axs[index_x].legend(handles, labels, loc='upper right', fontsize=10)
-    elif type == 'vertical':
-        nrows = 2
-        ncols = 1
-        fig, axs = plt.subplots(nrows, ncols, figsize=(ncols * 6, nrows * 4), sharex=True)
-        fig.tight_layout()
-        # fig.subplots_adjust(wspace=0)
+        for (model, x_line, y_line), marker, color in zip(col_results, markers, colors):
+            line = ax.plot(
+                x_line, y_line,
+                marker=marker,
+                markersize=6,
+                color=color,
+                label=model
+            )[0]
 
-        params = {'mathtext.default': 'regular'}
-        plt.rcParams.update(params)
+            # Extend dotted line if needed
+            if x_line[-1] < 300:
+                x_final_point = x_line[-1] + (x_line[-1] - x_line[-2]) / 2
+                y_final_point = y_line[-1] + (y_line[-1] - y_line[-2]) / 2
+                ax.plot(
+                    x_line[-1:] + [x_final_point],
+                    y_line[-1:] + [y_final_point],
+                    marker='x',
+                    markevery=[1],
+                    linestyle='dotted',
+                    color=line.get_color()
+                )
 
-        col_labels = ['Throughput (toks/s)', 'Time Between Tokens (ms)']
-        for index_x, col_results in enumerate(cols):
-            for model, x_line, y_line in col_results:
-                line = axs[index_x].plot(
-                    x_line,
-                    y_line,
-                    marker='o',
-                    label=model
-                )[0]
-                if x_line[-1] < 300:
-                    '''x_final_point = x_line[-1] + 10
-                    y_final_point = y_line[-1] + (y_line[-1] - y_line[-2]) / 5'''
-                    x_final_point = x_line[-1] + (x_line[-1] - x_line[-2]) / 2
-                    y_final_point = y_line[-1] + (y_line[-1] - y_line[-2]) / 2
-                    axs[index_x].plot(
-                        x_line[-1:] + [x_final_point],
-                        y_line[-1:] + [y_final_point],
-                        marker='x',
-                        markevery=[1],
-                        linestyle='dotted',
-                        color=line.get_color()
-                    )
-            axs[index_x].set_ylabel(col_labels[index_x], fontsize=10)
-            axs[index_x].set_xlabel('Average batch size (reqs)', fontsize=10)
+        # Axis labels and limits
+        ax.set_ylabel(col_labels[idx], labelpad=10)
+        ax.set_xlabel('Average Batch Size (reqs)', labelpad=10)
+        ax.set_xlim(left=0)
+        ax.set_ylim(bottom=0)
+        ax.grid(True, linestyle='--', linewidth=0.4, alpha=0.5)
+        ax.legend(loc='lower right', frameon=False)
 
-            handles, labels = axs[index_x].get_legend_handles_labels()
-            handles = [handles[2], handles[3], handles[1], handles[0]]
-            labels = [labels[2], labels[3], labels[1], labels[0]]
-            axs[index_x].legend(handles, labels, loc='center right', fontsize=10)
-
-    plt.savefig(os.path.join(path, f'background_throughput_latency'), bbox_inches='tight')
+    # Save as high-resolution PDF
+    output_path = os.path.join(path, 'background_throughput_latency.pdf')
+    plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
+    plt.show()
 
 
 def plot_kv_cache(
         all_model_results: List[Dict[str, float]],
         path: str
 ) -> None:
-    plt.style.use('ggplot')
+    # Consistent plot settings
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 13,
+        'axes.titlesize': 13,
+        'axes.labelsize': 13,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12,
+        'legend.fontsize': 10,
+        'lines.linewidth': 2.0,
+        'mathtext.default': 'regular',
+        'axes.grid': True,
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.4,
+        'figure.figsize': (7, 5)  # Consistent size for single plot
+    })
 
+    # Prepare data
     all_model_results = __prepare_lines(
         all_model_results,
         'kv_cache',
@@ -261,30 +258,46 @@ def plot_kv_cache(
         'model'
     )
 
-    nrows = 1
-    ncols = 1
-    fig, axs = plt.subplots(nrows, ncols, figsize=(ncols * 6, nrows * 4), sharex=True)
-    fig.tight_layout()
-    # fig.subplots_adjust(wspace=0)
+    desired_order = ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']
+    sorted_results = sorted(all_model_results, key=lambda x: desired_order.index(x[0]))
 
-    params = {'mathtext.default': 'regular'}
-    plt.rcParams.update(params)
-    for model, x_line, y_line in all_model_results:
-        line = axs.plot(
+    # Create plot
+    fig, ax = plt.subplots(figsize=(7, 5), constrained_layout=True, facecolor='white')
+    ax.set_facecolor('white')
+
+    # Ensure axis visibility
+    for spine in ax.spines.values():
+        spine.set_color('black')
+        spine.set_linewidth(1.0)
+    ax.tick_params(axis='both', colors='black', direction='in')
+
+    # Define markers and colors
+    markers = ['o', 's', 'D', '^']
+    colors = ['#0072B2', '#E69F00', '#009E73', '#D55E00']
+
+    # Plot each model's results
+    for (model, x_line, y_line), marker, color in zip(sorted_results, markers, colors):
+        ax.plot(
             x_line,
             y_line,
-            marker='o',
+            marker=marker,
+            markersize=6,
+            color=color,
             label=model
-        )[0]
-    axs.set_ylabel('Throughput (toks/s)', fontsize=10)
-    axs.set_xlabel('KV cache maximum usage (%)', fontsize=10)
+        )
 
-    handles, labels = axs.get_legend_handles_labels()
-    handles = [handles[2], handles[3], handles[1], handles[0]]
-    labels = [labels[2], labels[3], labels[1], labels[0]]
-    axs.legend(handles, labels, loc='center right', fontsize=10)
+    # Axis labels and ticks
+    ax.set_xlabel('KV Cache Maximum Usage (%)', fontsize=12, labelpad=10)
+    ax.set_ylabel('Throughput (tokens/s)', fontsize=12, labelpad=10)
+    ax.set_xlim(left=0)
+    ax.set_ylim(bottom=0)
+    ax.grid(True, linestyle='--', linewidth=0.4, alpha=0.5)
+    ax.legend(loc='upper right', frameon=False)
 
-    plt.savefig(os.path.join(path, f'background_kv_cache'), bbox_inches='tight')
+    # Save as high-resolution PDF
+    output_path = os.path.join(path, 'background_kv_cache_plot.pdf')
+    plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
+    plt.show()
 
 
 def main():
@@ -295,7 +308,7 @@ def main():
     plot_throughput_latency(
         model_results,
         '.',
-        'vertical'
+        'horizontal'
     )
 
     plot_kv_cache(
