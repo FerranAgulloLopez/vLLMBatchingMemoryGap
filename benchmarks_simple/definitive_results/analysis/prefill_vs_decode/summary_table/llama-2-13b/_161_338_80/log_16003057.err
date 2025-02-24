@@ -6,8 +6,8 @@ WARNING: CPU context switch tracing not supported, disabling.
 Try the 'nsys status --environment' command to learn more.
 
 Loading safetensors checkpoint shards:   0% Completed | 0/3 [00:00<?, ?it/s]
-Loading safetensors checkpoint shards:  33% Completed | 1/3 [00:03<00:07,  3.81s/it]
-Loading safetensors checkpoint shards:  67% Completed | 2/3 [00:06<00:03,  3.01s/it]
-Loading safetensors checkpoint shards: 100% Completed | 3/3 [00:10<00:00,  3.39s/it]
-Loading safetensors checkpoint shards: 100% Completed | 3/3 [00:10<00:00,  3.37s/it]
+Loading safetensors checkpoint shards:  33% Completed | 1/3 [00:08<00:17,  8.73s/it]
+Loading safetensors checkpoint shards:  67% Completed | 2/3 [00:14<00:06,  6.85s/it]
+Loading safetensors checkpoint shards: 100% Completed | 3/3 [00:22<00:00,  7.68s/it]
+Loading safetensors checkpoint shards: 100% Completed | 3/3 [00:22<00:00,  7.65s/it]
 

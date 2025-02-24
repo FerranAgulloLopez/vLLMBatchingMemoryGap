@@ -28,7 +28,7 @@ def cut_metric_values_timewise(metric_x: np.ndarray, metric_y: np.ndarray, init_
     return metric_x[init_index:end_index], metric_y[init_index:end_index]
 
 
-def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str]):
+def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str], start: float, end: float):
     try:
         conn = sqlite3.connect(path)
         metric_names = ''
@@ -41,7 +41,7 @@ def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str]):
                 SELECT metricName, timestamp, value
                 FROM GPU_METRICS
                 JOIN TARGET_INFO_GPU_METRICS USING (metricId)
-                WHERE ({metric_names})
+                WHERE ({metric_names}) AND timestamp > {start} AND timestamp < {end}
             """
         df = pd.read_sql_query(query, conn)
         conn.close()
@@ -62,15 +62,14 @@ def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str]):
     return metric_results
 
 
-def nsight_extract_kernel_start_values(path: str, kernel_name: str):
+def nsight_extract_prefill_decode_start_end_times(path: str):
     try:
         conn = sqlite3.connect(path)
         query = f"""
-                SELECT start, end
-                FROM CUPTI_ACTIVITY_KIND_KERNEL
-                JOIN StringIds ON CUPTI_ACTIVITY_KIND_KERNEL.shortName = StringIds.id
-                WHERE StringIds.value == '{kernel_name}' AND streamId == 7
-            """
+                SELECT text, start
+                FROM NVTX_EVENTS
+                WHERE eventType == 34
+            """ # type 34 correspond to mark events
         df = pd.read_sql_query(query, conn)
         conn.close()
     except Exception as e:
@@ -81,7 +80,25 @@ def nsight_extract_kernel_start_values(path: str, kernel_name: str):
 
     df = df.to_numpy()
 
-    return df[:, 0]
+    prefill_start = None
+    prefill_end = None
+    decode_start = None
+    decode_end = None
+    for index in range(np.shape(df)[0]):
+        if df[index, 0] == 'PrefillStart':
+            prefill_start = float(df[index, 1])
+        elif df[index, 0] == 'PrefillEnd':
+            prefill_end = float(df[index, 1])
+        elif df[index, 0] == 'DecodingStart':
+            decode_start = float(df[index, 1])
+        elif df[index, 0] == 'DecodingEnd':
+            decode_end = float(df[index, 1])
+    assert prefill_start is not None
+    assert prefill_end is not None
+    assert decode_start is not None
+    assert decode_end is not None
+
+    return prefill_start, prefill_end, decode_start, decode_end
 
 
 def extract_experiment_metric(path: str) -> Dict[str, float]:
@@ -133,7 +150,10 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
     if found is not None:
         flash_attention = False
 
-    # extract complete GPU metrics
+    # find prefill/decode start/end
+    prefill_start, prefill_end, decode_start, decode_end = nsight_extract_prefill_decode_start_end_times(nsight_sqlite_file)
+
+    # extract GPU metrics
     gpu_metrics = [
         'SMs Active [Throughput %]',
         'Compute Warps in Flight [Throughput %]',
@@ -141,31 +161,24 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
         'DRAM Read Bandwidth [Throughput %]',
         'DRAM Write Bandwidth [Throughput %]'
     ]
-    gpu_metrics_values = nsight_extract_gpu_metric_arrays(nsight_sqlite_file, gpu_metrics)
+    gpu_metrics_values_prefill_raw = nsight_extract_gpu_metric_arrays(nsight_sqlite_file, gpu_metrics, prefill_start, prefill_end)
+    gpu_metrics_values_decode_raw = nsight_extract_gpu_metric_arrays(nsight_sqlite_file, gpu_metrics, decode_start, decode_end)
 
-    # find prefill start -> start of flash_fwd_kernel
-    kernel_start_values = nsight_extract_kernel_start_values(nsight_sqlite_file, 'reshape_and_cache_flash_kernel' if flash_attention else 'reshape_and_cache_kernel')
-    prefill_start = np.min(kernel_start_values)
-
-    # find decode start and end -> start of flash_fwd_splitkv_kernel
-    kernel_start_values = nsight_extract_kernel_start_values(nsight_sqlite_file, 'flash_fwd_splitkv_kernel' if flash_attention else 'paged_attention_v1_kernel')
-    decode_start = np.min(kernel_start_values)
-    decode_end = np.max(kernel_start_values)
-
+    # to debug correct cut of the prefill and the decode
     '''fig, ax = plt.subplots()
-    meh = cut_metric_values_timewise(dram_read_x, dram_read_y, prefill_start, decode_start)
-    ax.plot(meh[0], np.convolve(meh[1], [0.05] * 20, 'same'), label='DRAM read')
-    meh = cut_metric_values_timewise(sm_unocc_x, sm_unocc_y, prefill_start, decode_start)
-    ax.plot(meh[0], np.convolve(meh[1], [0.05] * 20, 'same'), label='SM UnOccupancy')
+    line_x, line_y = gpu_metrics_values_prefill['DRAM Read Bandwidth [Throughput %]']['x'], gpu_metrics_values_prefill['DRAM Read Bandwidth [Throughput %]']['y']
+    ax.plot(line_x, np.convolve(line_y, [0.05] * 20, 'same'), label='DRAM read', marker='')
+    line_x, line_y = gpu_metrics_values_prefill['Unallocated Warps in Active SMs [Throughput %]']['x'], gpu_metrics_values_prefill['Unallocated Warps in Active SMs [Throughput %]']['y']
+    ax.plot(line_x, np.convolve(line_y, [0.05] * 20, 'same'), label='SM UnOccupancy', marker='')
     ax.grid()
     ax.legend()
     fig.savefig("/home/ferran/Downloads/prefill.png")
 
     fig, ax = plt.subplots()
-    meh = cut_metric_values_timewise(dram_read_x, dram_read_y, decode_start, decode_end)
-    ax.plot(meh[0], meh[1], label='DRAM read')
-    meh = cut_metric_values_timewise(sm_unocc_x, sm_unocc_y, decode_start, decode_end)
-    ax.plot(meh[0], meh[1], label='SM UnOccupancy')
+    line_x, line_y = gpu_metrics_values_decode['DRAM Read Bandwidth [Throughput %]']['x'], gpu_metrics_values_decode['DRAM Read Bandwidth [Throughput %]']['y']
+    ax.plot(line_x, np.convolve(line_y, [0.05] * 20, 'same'), label='DRAM read', marker='')
+    line_x, line_y = gpu_metrics_values_decode['Unallocated Warps in Active SMs [Throughput %]']['x'], gpu_metrics_values_decode['Unallocated Warps in Active SMs [Throughput %]']['y']
+    ax.plot(line_x, np.convolve(line_y, [0.05] * 20, 'same'), label='SM UnOccupancy', marker='')
     ax.grid()
     ax.legend()
     fig.savefig("/home/ferran/Downloads/decode.png")'''
@@ -174,12 +187,10 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
     gpu_metrics_values_prefill = {}
     gpu_metrics_values_decode = {}
     for gpu_metric in gpu_metrics:
-        x_values = gpu_metrics_values[gpu_metric]['x']
-        y_values = gpu_metrics_values[gpu_metric]['y']
-        _, y_values_prefill = cut_metric_values_timewise(x_values, y_values, prefill_start, decode_start)
-        _, y_values_decode = cut_metric_values_timewise(x_values, y_values, decode_start, decode_end)
-        y_values_prefill = y_values_prefill[y_values_prefill != 0]
-        y_values_decode = y_values_decode[y_values_decode != 0]
+        y_values_prefill = gpu_metrics_values_prefill_raw[gpu_metric]['y']
+        y_values_decode = gpu_metrics_values_decode_raw[gpu_metric]['y']
+        '''y_values_prefill = y_values_prefill[y_values_prefill != 0]
+        y_values_decode = y_values_decode[y_values_decode != 0]'''
         gpu_metrics_values_prefill[gpu_metric] = y_values_prefill
         gpu_metrics_values_decode[gpu_metric] = y_values_decode
     output['gpu_metrics_values_prefill'] = gpu_metrics_values_prefill
@@ -267,7 +278,8 @@ def __prepare_lines(results: List[Dict[str, float]], x_axis: str, y_axis: str, s
 
 def print_table(
         all_model_results: List[Dict[str, Any]],
-        path: str
+        path: str,
+        type: str
 ) -> None:
     plt.style.use('ggplot')
 
@@ -276,34 +288,76 @@ def print_table(
 
     if all_model_results is not None:
         import pickle
-        with open('/home/ferran/Downloads/meh', 'wb') as file:
+        with open('/home/ferran/Downloads/prefill_vs_decode_summary_table', 'wb') as file:
             pickle.dump(all_model_results, file)
     else:
         import pickle
-        with open('/home/ferran/Downloads/meh', 'rb') as file:
+        with open('/home/ferran/Downloads/prefill_vs_decode_summary_table', 'rb') as file:
             all_model_results = pickle.load(file)
 
-    prefill_importance = [1 - item['decode_importance'] for item in all_model_results]
-    print(f'Prefill Importance: {print_metric_value(float(np.mean(prefill_importance)))}')
-    decode_importance = [item['decode_importance'] for item in all_model_results]
-    print(f'Decode Importance: {print_metric_value(float(np.mean(decode_importance)))}')
+    if type == 'together':
+        prefill_importance = [1 - item['decode_importance'] for item in all_model_results]
+        print(f'Prefill Importance: {print_metric_value(float(np.mean(prefill_importance)))}')
+        decode_importance = [item['decode_importance'] for item in all_model_results]
+        print(f'Decode Importance: {print_metric_value(float(np.mean(decode_importance)))}')
 
-    for metric in all_model_results[0]['gpu_metrics_values_prefill'].keys():
-        prefill_sum_average = 0
-        prefill_sum_max = 0
-        decode_sum_max = 0
-        decode_sum_average = 0
-        count = 0
+        for metric in all_model_results[0]['gpu_metrics_values_prefill'].keys():
+            prefill_sum_average = 0
+            prefill_sum_max = 0
+            decode_sum_max = 0
+            decode_sum_average = 0
+            count = 0
+            for model_results in all_model_results:
+                prefill_values = model_results['gpu_metrics_values_prefill'][metric]
+                decode_values = model_results['gpu_metrics_values_decode'][metric]
+                prefill_sum_average += np.mean(prefill_values)
+                prefill_sum_max += np.max(prefill_values)
+                decode_sum_average += np.mean(decode_values)
+                decode_sum_max += np.max(decode_values)
+                count += 1
+            print(f'{metric} Average. Prefill: {print_metric_value(prefill_sum_average / count)}. Decode: {print_metric_value(decode_sum_average / count)}')
+            print(f'{metric} Max. Prefill: {print_metric_value(prefill_sum_max / count)}. Decode: {print_metric_value(decode_sum_max / count)}')
+
+    elif type == 'separated':
+        output_models = []
+        output_lines = {}
+        output_lines['Importance'] = []
+        for gpu_metric in all_model_results[0]['gpu_metrics_values_prefill'].keys():
+            output_lines[gpu_metric] = {
+                'average': [],
+                'max': []
+            }
+
         for model_results in all_model_results:
-            prefill_values = model_results['gpu_metrics_values_prefill'][metric]
-            decode_values = model_results['gpu_metrics_values_decode'][metric]
-            prefill_sum_average += np.mean(prefill_values)
-            prefill_sum_max += np.max(prefill_values)
-            decode_sum_average += np.mean(decode_values)
-            decode_sum_max += np.max(decode_values)
-            count += 1
-        print(f'{metric} Average. Prefill: {print_metric_value(prefill_sum_average / count)}. Decode: {print_metric_value(decode_sum_average / count)}')
-        print(f'{metric} Max. Prefill: {print_metric_value(prefill_sum_max / count)}. Decode: {print_metric_value(decode_sum_max / count)}')
+            output_models.append(model_results['model'])
+
+            prefill_importance = print_metric_value(1 - model_results['decode_importance'])
+            decode_importance = print_metric_value(model_results['decode_importance'])
+            output_lines['Importance'].append(prefill_importance)
+            output_lines['Importance'].append(decode_importance)
+
+            for metric in all_model_results[0]['gpu_metrics_values_prefill'].keys():
+                prefill_values = model_results['gpu_metrics_values_prefill'][metric]
+                decode_values = model_results['gpu_metrics_values_decode'][metric]
+                prefill_average = print_metric_value(float(np.mean(prefill_values)))
+                prefill_max = print_metric_value(float(np.max(prefill_values)))
+                decode_average = print_metric_value(float(np.mean(decode_values)))
+                decode_max = print_metric_value(float(np.max(decode_values)))
+                output_lines[metric]['average'].append(prefill_average)
+                output_lines[metric]['average'].append(decode_average)
+                output_lines[metric]['max'].append(prefill_max)
+                output_lines[metric]['max'].append(decode_max)
+
+        print(output_models)
+        for line_label, line_values in output_lines.items():
+            if line_label == 'Importance':
+                str_values = ' & '.join(line_values)
+                print(f'{line_label} -> {str_values}')
+            else:
+                str_values_average = ' & '.join(line_values['average'])
+                print(f'{line_label} -> Average & {str_values_average}')
+                str_values_max = ' & '.join(line_values['max'])
+                print(f'{line_label} -> Max & {str_values_max}')
 
 
 def main():
@@ -313,12 +367,14 @@ def main():
 
     print_table(
         model_results,
-        '.'
+        '.',
+        'separated'
     )
 
     '''print_table(
         None,
-        '.'
+        '.',
+        'separated'
     )'''
 
 
