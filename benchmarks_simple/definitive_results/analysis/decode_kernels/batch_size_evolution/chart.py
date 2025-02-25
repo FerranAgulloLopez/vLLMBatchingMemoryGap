@@ -8,6 +8,7 @@ import pandas as pd
 from typing import List, Tuple, Dict, Set, Any
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+import matplotlib.gridspec as gridspec
 import numpy as np
 
 # FOR RUNNING SCRIPT, EXPORT FIRST nsys-rep REPORT WITH "nsys export --separate-strings yes --type sqlite .nsys-rep"
@@ -263,9 +264,10 @@ def plot_batch_size_evolution(
 
     nrows = 2
     ncols = 1
-    fig, axs = plt.subplots(nrows, ncols, figsize=(ncols * 6, nrows * 4), sharey=True)
-    fig.tight_layout()
-    # fig.subplots_adjust(wspace=0)
+    fig = plt.figure(figsize=(8, 6))
+    plt.tight_layout()
+    gs = gridspec.GridSpec(2, 2, height_ratios=[2, 1])
+    fig.subplots_adjust(wspace=0.05, hspace=0.25)
 
     metrics = [
         'Compute Warps in Flight [Throughput %]',
@@ -284,14 +286,14 @@ def plot_batch_size_evolution(
     params = {'mathtext.default': 'regular'}
     plt.rcParams.update(params)
 
-    index_x = 0
-
+    # top subplot
+    axs_top = fig.add_subplot(gs[0, :])
     for item in all_model_results:
         for metric in metrics:
             item[f'{metric} Average'] = np.mean(item['gpu_metrics_values_decode'][metric])
             item[f'{metric} Max'] = np.max(item['gpu_metrics_values_decode'][metric])
     for metric_index, metric in enumerate(metrics):
-        axs[index_x].add_line(Line2D([], [], color='none', label=metrics_labels[metric_index]))
+        axs_top.add_line(Line2D([], [], color='none', label=metrics_labels[metric_index]))
         for label, metric_specific in [('max', f'{metric} Max'), ('average', f'{metric} Average')]:
             _, x_line, y_line = __prepare_lines(
                 all_model_results,
@@ -299,7 +301,7 @@ def plot_batch_size_evolution(
                 metric_specific,
                 'model'
             )[0]
-            line = axs[index_x].plot(
+            line = axs_top.plot(
                 x_line,
                 y_line,
                 marker='o',
@@ -308,26 +310,24 @@ def plot_batch_size_evolution(
             )[0]
             if label == 'average':
                 metric_colors.append(line.get_color())
-    axs[index_x].set_ylabel('Usage proportion (%)', fontsize=10)
-    axs[index_x].set_xlabel('Average batch size (reqs)', fontsize=10)
+    axs_top.set_ylabel('Usage proportion (%)', fontsize=10)
+    axs_top.set_xlabel('Average batch size (reqs)', fontsize=10)
 
-    leg = axs[index_x].legend(loc='center right', fontsize=10)
+    leg = axs_top.legend(loc='center right', fontsize=10)
     for item, label in zip(leg.legend_handles, leg.texts):
         if label._text in metrics_labels:
             width = item.get_window_extent(fig.canvas.get_renderer()).width
             label.set_ha('left')
             label.set_position((-2 * width, 0))
 
-    index_x = 1
-
-    iter_index = 0
-    while all_model_results[iter_index]['batch_size'] != 512 and iter_index < len(all_model_results):
-        iter_index += 1
-    assert all_model_results[iter_index]['batch_size'] == 512
-
-    results = all_model_results[iter_index]
-    start_index = 30
-    end_index = 1080
+    # subplots bottom
+    results_batch_size_1 = None
+    results_batch_size_512 = None
+    for results in all_model_results:
+        if results['batch_size'] == 1:
+            results_batch_size_1 = results
+        elif results['batch_size'] == 512:
+            results_batch_size_512 = results
 
     def max_pool1d_strided(input_array, kernel_len, stride):  # extracted from chatGPT4
         input_len = input_array.shape[0]
@@ -340,24 +340,48 @@ def plot_batch_size_evolution(
 
         return output
 
+    # subplot bottom left
+    axs_bottom_left = fig.add_subplot(gs[1, 0])
+    start_index = 0
+    end_index = 125
     for metric_index, metric in enumerate(metrics):
-        y_line = results['gpu_metrics_values_decode'][metric][start_index:end_index]
+        y_line = results_batch_size_1['gpu_metrics_values_decode'][metric][start_index:end_index]
         y_line = max_pool1d_strided(y_line, 5, stride=4)
         x_line = np.arange(np.shape(y_line)[0])
-        line = axs[index_x].plot(
+        line = axs_bottom_left.plot(
             x_line,
             y_line,
-            marker='o',
+            marker='',
             linestyle=metrics_linestyles[metric_index],
             color=metric_colors[metric_index],
             label=metrics_labels[metric_index]
         )[0]
-    axs[index_x].set_xlabel('Time', fontsize=10)
-    if nrows > 1:
-        axs[index_x].set_ylabel('Usage proportion (%)', fontsize=10)
-    axs[index_x].xaxis.set_ticklabels([])
+    axs_bottom_left.set_xlabel('Time (batch size = 1)', fontsize=10)
+    axs_bottom_left.set_ylabel('Usage proportion (%)', fontsize=10)
+    axs_bottom_left.xaxis.set_ticklabels([])
+    axs_bottom_left.yaxis.set_ticks([0, 50, 100])
+    leg = axs_bottom_left.legend(loc='center right', fontsize=10)
 
-    leg = axs[index_x].legend(loc='center right', fontsize=10)
+    # subplot bottom right
+    axs_bottom_left = fig.add_subplot(gs[1, 1])
+    start_index = 30
+    end_index = 1080
+    for metric_index, metric in enumerate(metrics):
+        y_line = results_batch_size_512['gpu_metrics_values_decode'][metric][start_index:end_index]
+        y_line = max_pool1d_strided(y_line, 5, stride=4)
+        x_line = np.arange(np.shape(y_line)[0])
+        line = axs_bottom_left.plot(
+            x_line,
+            y_line,
+            marker='',
+            linestyle=metrics_linestyles[metric_index],
+            color=metric_colors[metric_index],
+            label=metrics_labels[metric_index]
+        )[0]
+    axs_bottom_left.set_xlabel('Time (batch size = 512)', fontsize=10)
+    axs_bottom_left.yaxis.set_ticklabels([])
+    axs_bottom_left.xaxis.set_ticklabels([])
+    leg = axs_bottom_left.legend(loc='center right', fontsize=10)
 
     plt.savefig(os.path.join(path, f'decode_kernels_batch_size_evolution'), bbox_inches='tight')
 
@@ -366,19 +390,19 @@ def main():
     '''for model in ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
         create_sqlite_databases(model)'''
 
-    model_results: List[Dict[str, Any]] = []
+    '''model_results: List[Dict[str, Any]] = []
     for model in ['opt-1.3b']:
         model_results += extract_results(model, model)
 
     plot_batch_size_evolution(
         model_results,
         '.'
-    )
+    )'''
 
-    '''plot_batch_size_evolution(
+    plot_batch_size_evolution(
         None,
         '.'
-    )'''
+    )
 
 
 if __name__ == '__main__':
