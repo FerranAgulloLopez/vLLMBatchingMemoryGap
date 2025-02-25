@@ -262,7 +262,7 @@ def plot_kv_cache(
     sorted_results = sorted(all_model_results, key=lambda x: desired_order.index(x[0]))
 
     # Create plot
-    fig, ax = plt.subplots(figsize=(7, 5), constrained_layout=True, facecolor='white')
+    fig, ax = plt.subplots(figsize=(6, 4), constrained_layout=True, facecolor='white')
     ax.set_facecolor('white')
 
     # Ensure axis visibility

@@ -128,35 +128,69 @@ def plot_time_evolution(
         'model'
     )[0]
 
-    nrows = 1
-    ncols = 1
-    fig, axs = plt.subplots(nrows, ncols, figsize=(ncols * 6, nrows * 4), sharex=True)
-    fig.tight_layout()
-    # fig.subplots_adjust(wspace=0)
+    # Calculate global slowdown
+    init_time = prefill_y[0] + decode_y[0]
+    slowdown_y = [(prefill_y[i] + decode_y[i]) / init_time for i in range(len(prefill_x))]
 
-    params = {'mathtext.default': 'regular'}
-    plt.rcParams.update(params)
+    # Set plot style
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 14,
+        'axes.titlesize': 14,
+        'axes.labelsize': 14,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12,
+        'legend.fontsize': 12,
+        'lines.linewidth': 2.5,
+        'mathtext.default': 'regular',
+        'axes.grid': True,
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.5,
+        'figure.figsize': (8, 6)
+    })
+
+    # Prepare plot
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.set_facecolor('white')
+    colors = ['#0072B2', '#E69F00', '#009E73', '#D55E00']
+
+    for spine in ax.spines.values():
+        spine.set_color('black')
+        spine.set_linewidth(1.0)  # Make the axis lines more prominent
+    ax.tick_params(axis='both', colors='black', direction='in')
 
     prefill_x = [str(item) for item in prefill_x]
-    decode_x = [str(item) for item in decode_x]
+    bar_width = 0.6
+    ax.bar(prefill_x, prefill_y, label='Prefill Time', color='#0072B2', edgecolor='black', width=bar_width)
+    patches = ax.bar(prefill_x, decode_y, bottom=prefill_y, label='Decode Time', color='#E69F00', edgecolor='black', width=bar_width)
 
-    axs2 = axs.twinx()
-    init_time = prefill_y[0] + decode_y[0]
-    slowdown_y = [(prefill_y[index] + decode_y[index]) / init_time for index in range(len(prefill_x))]
-    axs2.plot(prefill_x, slowdown_y, marker='o', label='global slowdown', color='red')
-    axs2.set_ylabel('Global slowdown')
-    axs2.grid(False)
-    # axs2.set_xticks([])
-    # axs2.set_yticks([])
-    axs2.legend(loc='upper right', fontsize=10)
+    for i in range(len(prefill_x)):
+        total_time = prefill_y[i] + decode_y[i]
+        percentage = decode_y[i] / total_time * 100
+        # ax.text(i, total_time / 2, f'{percentage:.1f}%', ha='center', va='center', fontsize=11, color='black')
 
-    axs.bar(prefill_x, prefill_y, label='prefill time')
-    patches = axs.bar(decode_x, decode_y, bottom=prefill_y, label='decode time')
-    axs.bar_label(patches, ['{0:.1f}%'.format(decode_y[index] / (prefill_y[index] + decode_y[index]) * 100) for index in range(len(prefill_x))], label_type='center')
+    ax2 = ax.twinx()
+    for spine in ax2.spines.values():
+        spine.set_color('black')
+        spine.set_linewidth(1.0)
+    ax2.plot(prefill_x, slowdown_y, marker='o', color='#D55E00', label='Global Slowdown', linewidth=2.5)
+    ax2.set_ylabel('Global Slowdown', fontsize=14, color='black')
+    ax2.tick_params(axis='y', colors='black', width=1.5)
+    ax2.grid(False)
+    # ax.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.3)
+    # ax2.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.3)
 
-    axs.set_xlabel('Average batch size (reqs)')
-    axs.set_ylabel('Time (s)')
-    axs.legend(loc='upper left', fontsize=10)
+    ax.set_xlabel('Average Batch Size (reqs)', fontsize=14, labelpad=10, color='black')
+    ax.set_ylabel('Time (s)', fontsize=14, labelpad=10, color='black')
+    
+    ax.legend(loc='upper left', frameon=False)
+    ax2.legend(loc='center left', frameon=False)
+
+    # Save plot as high-resolution PDF
+    output_path = 'prefill_decode_plot.pdf'
+    plt.tight_layout()
+    plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
+    plt.show()
 
     '''col_labels = ['Throughput (toks/s)', 'Time Between Tokens (ms)']
     for model, x_line, y_line in col_results:
@@ -173,8 +207,6 @@ def plot_time_evolution(
     handles = [handles[2], handles[3], handles[1], handles[0]]
     labels = [labels[2], labels[3], labels[1], labels[0]]
     axs[index_x].legend(handles, labels, loc='center right', fontsize=10)'''
-
-    plt.savefig(os.path.join(path, f'decode_vs_prefill_time_evolution'), bbox_inches='tight')
 
 
 def plot_kv_cache(

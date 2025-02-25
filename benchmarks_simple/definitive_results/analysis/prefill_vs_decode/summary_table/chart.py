@@ -343,7 +343,7 @@ def print_table(
 
 def main():
     model_results: List[Dict[str, Any]] = []
-    for model in ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
+    for model in ['opt-1.3b']: # ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
         model_results += extract_results(model, model)
 
     print_table(
