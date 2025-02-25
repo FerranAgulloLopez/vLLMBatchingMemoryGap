@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import matplotlib.gridspec as gridspec
 import numpy as np
+import pickle
 
 # FOR RUNNING SCRIPT, EXPORT FIRST nsys-rep REPORT WITH "nsys export --separate-strings yes --type sqlite .nsys-rep"
 # MAYBE THE REPORT IS MISSING BECAUSE OF REPO SIZE CONSTRAINTS. IN THAT CASE, RERUN THE EXPS WITH THE PROVIDED CONFIG
@@ -251,139 +252,110 @@ def plot_batch_size_evolution(
         all_model_results: List[Dict[str, Any]],
         path: str
 ) -> None:
-    plt.style.use('ggplot')
+    params = {'mathtext.default': 'regular'}
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 13,
+        'axes.titlesize': 15,
+        'axes.labelsize': 15,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12,
+        'legend.fontsize': 10,
+        'lines.linewidth': 2.0,
+        'mathtext.default': 'regular',
+        'axes.grid': True,
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.4,
+        'figure.figsize': (7, 5)  # Consistent size for single plot
+    })
 
-    if all_model_results is not None:
-        import pickle
-        with open('/home/ferran/Downloads/decode_kernels_batch_size_evolution', 'wb') as file:
-            pickle.dump(all_model_results, file)
-    else:
-        import pickle
-        with open('/home/ferran/Downloads/decode_kernels_batch_size_evolution', 'rb') as file:
+    # Load results if not provided
+    if all_model_results is None:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_batch_size_evolution', 'rb') as file:
             all_model_results = pickle.load(file)
-
-    nrows = 2
-    ncols = 1
-    fig = plt.figure(figsize=(8, 6))
-    plt.tight_layout()
-    gs = gridspec.GridSpec(2, 2, height_ratios=[2, 1])
-    fig.subplots_adjust(wspace=0.05, hspace=0.25)
+    else:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_batch_size_evolution', 'wb') as file:
+            pickle.dump(all_model_results, file)
 
     metrics = [
         'Compute Warps in Flight [Throughput %]',
         'DRAM Read Bandwidth [Throughput %]'
     ]
-    metrics_labels = [
-        'Compute Warps in Flight',
-        'DRAM Read Throughput'
-    ]
-    metrics_linestyles = [
-        'solid',
-        'dashed'
-    ]
-    metric_colors = []
+    metrics_labels = ['Compute Warps in Flight', 'DRAM Read Throughput']
+    metrics_linestyles = ['solid', 'dashed']
+    metric_colors = ['#0072B2', '#E69F00']
+    light_colors = ['#66B2FF', '#FFCC80']  # Lighter shades for the max parts
 
-    params = {'mathtext.default': 'regular'}
-    plt.rcParams.update(params)
+    # Prepare figure
+    fig = plt.figure(figsize=(10, 8), constrained_layout=True, facecolor='white')
+    gs = gridspec.GridSpec(2, 2, height_ratios=[1, 2])
 
-    # top subplot
-    axs_top = fig.add_subplot(gs[0, :])
+    # Top subplot
+    ax_top = fig.add_subplot(gs[1, :])
+    batch_sizes = [1, 32, 64, 128, 256]
+    bar_width = 0.35 # 0.35
+    index = np.arange(len(batch_sizes))
+
+    averages = {metric: [] for metric in metrics}
+    maxima = {metric: [] for metric in metrics}
     for item in all_model_results:
-        for metric in metrics:
-            item[f'{metric} Average'] = np.mean(item['gpu_metrics_values_decode'][metric])
-            item[f'{metric} Max'] = np.max(item['gpu_metrics_values_decode'][metric])
-    for metric_index, metric in enumerate(metrics):
-        axs_top.add_line(Line2D([], [], color='none', label=metrics_labels[metric_index]))
-        for label, metric_specific in [('max', f'{metric} Max'), ('average', f'{metric} Average')]:
-            _, x_line, y_line = __prepare_lines(
-                all_model_results,
-                'batch_size',
-                metric_specific,
-                'model'
-            )[0]
-            line = axs_top.plot(
-                x_line,
-                y_line,
-                marker='o',
-                linestyle=metrics_linestyles[metric_index],
-                label=label
-            )[0]
-            if label == 'average':
-                metric_colors.append(line.get_color())
-    axs_top.set_ylabel('Usage proportion (%)', fontsize=10)
-    axs_top.set_xlabel('Average batch size (reqs)', fontsize=10)
+        if item['batch_size'] in batch_sizes:
+            for metric in metrics:
+                avg_value = np.mean(item['gpu_metrics_values_decode'][metric])
+                max_value = np.max(item['gpu_metrics_values_decode'][metric])
+                averages[metric].append(avg_value)
+                maxima[metric].append(max_value)
 
-    leg = axs_top.legend(loc='center right', fontsize=10)
-    for item, label in zip(leg.legend_handles, leg.texts):
-        if label._text in metrics_labels:
-            width = item.get_window_extent(fig.canvas.get_renderer()).width
-            label.set_ha('left')
-            label.set_position((-2 * width, 0))
+    for i, metric in enumerate(metrics):
+        ax_top.bar(index + i * bar_width, maxima[metric], bar_width, color=metric_colors[i], hatch='//', edgecolor='black')
+        ax_top.bar(index + i * bar_width, averages[metric], bar_width,
+              label=f'{metrics_labels[i]}', edgecolor='black', color=metric_colors[i])
 
-    # subplots bottom
-    results_batch_size_1 = None
-    results_batch_size_512 = None
-    for results in all_model_results:
-        if results['batch_size'] == 1:
-            results_batch_size_1 = results
-        elif results['batch_size'] == 512:
-            results_batch_size_512 = results
+    ax_top.set_ylabel('Usage Proportion (%)')
+    ax_top.set_ylim(0, 100)  # Set y-axis limit from 0 to 100
+    ax_top.set_xlabel('Average Batch Size (reqs)')
+    ax_top.set_xticks(index + bar_width / 2)
+    ax_top.set_xticklabels(batch_sizes)
+    # ax_top.legend(loc='upper left', frameon=True)
 
-    def max_pool1d_strided(input_array, kernel_len, stride):  # extracted from chatGPT4
-        input_len = input_array.shape[0]
-        output_len = (input_len - kernel_len) // stride + 1
-        output = np.zeros(output_len)
+    # Bottom subplots for batch size 1 and 512
+    def plot_time_series(ax, results, batch_size, start_index, end_index):
+        for metric_index, metric in enumerate(metrics):
+            y_line = results['gpu_metrics_values_decode'][metric][start_index:end_index]
+            y_line = max_pool1d_strided(y_line, 5, stride=4)
+            x_line = np.arange(len(y_line))
+            ax.plot(x_line, y_line, linestyle=metrics_linestyles[metric_index],
+                    color=metric_colors[metric_index], label=metrics_labels[metric_index])
+        ax.set_xlabel(f'Time (batch size = {batch_size})')
+        ax.set_ylabel('Usage Proportion (%)')
+        # if batch_size == 1:
+        #     ax.legend(loc='upper left', frameon=False)
+        ax.set_xlim(left=0)
+        ax.set_ylim(bottom=0)
+        ax.grid(True, linestyle='--', linewidth=0.4, alpha=0.5)
 
-        for i in range(output_len):
-            region = input_array[i * stride:i * stride + kernel_len]
-            output[i] = np.max(region)
+    def max_pool1d_strided(input_array, kernel_len, stride):
+        output_len = (len(input_array) - kernel_len) // stride + 1
+        return np.array([np.max(input_array[i * stride:i * stride + kernel_len]) for i in range(output_len)])
 
-        return output
+    results_batch_size_1 = next(r for r in all_model_results if r['batch_size'] == 1)
+    results_batch_size_512 = next(r for r in all_model_results if r['batch_size'] == 512)
 
-    # subplot bottom left
-    axs_bottom_left = fig.add_subplot(gs[1, 0])
-    start_index = 0
-    end_index = 125
-    for metric_index, metric in enumerate(metrics):
-        y_line = results_batch_size_1['gpu_metrics_values_decode'][metric][start_index:end_index]
-        y_line = max_pool1d_strided(y_line, 5, stride=4)
-        x_line = np.arange(np.shape(y_line)[0])
-        line = axs_bottom_left.plot(
-            x_line,
-            y_line,
-            marker='',
-            linestyle=metrics_linestyles[metric_index],
-            color=metric_colors[metric_index],
-            label=metrics_labels[metric_index]
-        )[0]
-    axs_bottom_left.set_xlabel('Time (batch size = 1)', fontsize=10)
-    axs_bottom_left.set_ylabel('Usage proportion (%)', fontsize=10)
-    axs_bottom_left.xaxis.set_ticklabels([])
-    axs_bottom_left.yaxis.set_ticks([0, 50, 100])
-    leg = axs_bottom_left.legend(loc='center right', fontsize=10)
+    ax_bottom_left = fig.add_subplot(gs[0, 0])
+    plot_time_series(ax_bottom_left, results_batch_size_1, 1, start_index=0, end_index=125)
 
-    # subplot bottom right
-    axs_bottom_left = fig.add_subplot(gs[1, 1])
-    start_index = 30
-    end_index = 1080
-    for metric_index, metric in enumerate(metrics):
-        y_line = results_batch_size_512['gpu_metrics_values_decode'][metric][start_index:end_index]
-        y_line = max_pool1d_strided(y_line, 5, stride=4)
-        x_line = np.arange(np.shape(y_line)[0])
-        line = axs_bottom_left.plot(
-            x_line,
-            y_line,
-            marker='',
-            linestyle=metrics_linestyles[metric_index],
-            color=metric_colors[metric_index],
-            label=metrics_labels[metric_index]
-        )[0]
-    axs_bottom_left.set_xlabel('Time (batch size = 512)', fontsize=10)
-    axs_bottom_left.yaxis.set_ticklabels([])
-    axs_bottom_left.xaxis.set_ticklabels([])
-    leg = axs_bottom_left.legend(loc='center right', fontsize=10)
+    ax_bottom_right = fig.add_subplot(gs[0, 1])
+    plot_time_series(ax_bottom_right, results_batch_size_512, 512, start_index=30, end_index=1080)
+    ax_bottom_right.yaxis.set_ticklabels([])
 
-    plt.savefig(os.path.join(path, f'decode_kernels_batch_size_evolution'), bbox_inches='tight')
+    legend_handles = [Line2D([0], [0], color=metric_colors[i], lw=7, label=metrics_labels[i]) for i in range(len(metrics))]
+    fig.legend(handles=legend_handles, loc='upper center', ncol=len(metrics), frameon=False, fontsize=12, bbox_to_anchor=(0.5, 0.95))
+
+    # Save plot
+    output_path = os.path.join(path, 'decode_kernels_batch_size_evolution.pdf')
+    plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
+    plt.show()
+
 
 
 def main():
