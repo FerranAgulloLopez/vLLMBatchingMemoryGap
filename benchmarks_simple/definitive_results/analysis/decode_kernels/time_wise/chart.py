@@ -307,11 +307,11 @@ def plot_decode_timewise(
 
     if all_model_results is not None:
         import pickle
-        with open('/home/ferran/Downloads/decode_kernels_time_wise', 'wb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_time_wise', 'wb') as file:
             pickle.dump(all_model_results, file)
     else:
         import pickle
-        with open('/home/ferran/Downloads/decode_kernels_time_wise', 'rb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_time_wise', 'rb') as file:
             all_model_results = pickle.load(file)
 
     # extract specific results for batch sizes 1 and 160
