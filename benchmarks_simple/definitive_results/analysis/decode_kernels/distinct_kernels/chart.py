@@ -318,7 +318,7 @@ def plot_batch_size_evolution(
         all_kernel_time: float = 0
         for kernel_label, kernel_duration in model_results['kernel_durations_grouped'].items():
             all_kernel_time += float(kernel_duration)
-        all_model_results[index]['kernel_durations_grouped']['Python code'] = decode_time - all_kernel_time
+        all_model_results[index]['kernel_durations_grouped']['CPU time'] = decode_time - all_kernel_time
 
     # compute proportion
     for index, model_results in enumerate(all_model_results):
