@@ -36,32 +36,14 @@ def create_sqlite_databases(path: str):
             print(result.stderr)
 
 
-def cut_metric_values_timewise(metric_x: np.ndarray, metric_y: np.ndarray, init_cut: float, end_cut: float):
-    assert init_cut < end_cut
-    assert metric_x[0] < init_cut < metric_x[-1]
-    assert metric_x[0] < end_cut < metric_x[-1]
-    init_index: int = None
-    end_index: int = None
-    iter_index: int = 0
-    while (init_index is None or end_index is None) and iter_index < len(metric_x):
-        if init_index is None and init_cut < metric_x[iter_index]:
-            init_index = iter_index
-        if end_index is None and end_cut < metric_x[iter_index]:
-            end_index = iter_index
-        iter_index += 1
-    assert init_cut < end_cut
-    return metric_x[init_index:end_index], metric_y[init_index:end_index]
-
-
-def nsight_extract_kernel_start_values(path: str, kernel_name: str):
+def nsight_extract_prefill_decode_start_end_times(path: str):
     try:
         conn = sqlite3.connect(path)
         query = f"""
-                SELECT start, end
-                FROM CUPTI_ACTIVITY_KIND_KERNEL
-                JOIN StringIds ON CUPTI_ACTIVITY_KIND_KERNEL.shortName = StringIds.id
-                WHERE StringIds.value == '{kernel_name}' AND streamId == 7
-            """
+                SELECT text, start
+                FROM NVTX_EVENTS
+                WHERE eventType == 34
+            """ # type 34 correspond to mark events
         df = pd.read_sql_query(query, conn)
         conn.close()
     except Exception as e:
@@ -72,7 +54,25 @@ def nsight_extract_kernel_start_values(path: str, kernel_name: str):
 
     df = df.to_numpy()
 
-    return df[:, 0]
+    prefill_start = None
+    prefill_end = None
+    decode_start = None
+    decode_end = None
+    for index in range(np.shape(df)[0]):
+        if df[index, 0] == 'PrefillStart':
+            prefill_start = float(df[index, 1])
+        elif df[index, 0] == 'PrefillEnd':
+            prefill_end = float(df[index, 1])
+        elif df[index, 0] == 'DecodingStart':
+            decode_start = float(df[index, 1])
+        elif df[index, 0] == 'DecodingEnd':
+            decode_end = float(df[index, 1])
+    assert prefill_start is not None
+    assert prefill_end is not None
+    assert decode_start is not None
+    assert decode_end is not None
+
+    return prefill_start, prefill_end, decode_start, decode_end
 
 
 def nsight_extract_kernels_duration_on_window(path: str, start_time: float, end_time: float):
@@ -137,14 +137,8 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
     if found is not None:
         flash_attention = False
 
-    # find decode start and end -> start of flash_fwd_splitkv_kernel
-    try:
-        kernel_start_values = nsight_extract_kernel_start_values(nsight_sqlite_file, 'flash_fwd_splitkv_kernel' if flash_attention else 'paged_attention_v1_kernel')
-    except Exception as e:
-        if str(e) == 'Nothing found in SQLite database' and not flash_attention:
-            kernel_start_values = nsight_extract_kernel_start_values(nsight_sqlite_file, 'paged_attention_v2_kernel')
-    decode_start = np.min(kernel_start_values)
-    decode_end = np.max(kernel_start_values)
+    # find decode start and end
+    _, _, decode_start, decode_end = nsight_extract_prefill_decode_start_end_times(nsight_sqlite_file)
 
     # extract kernel durations during decoding
     kernel_durations = nsight_extract_kernels_duration_on_window(nsight_sqlite_file, decode_start, decode_end)
@@ -240,11 +234,11 @@ def plot_batch_size_evolution(
 
     if all_model_results is not None:
         import pickle
-        with open('/home/ferran/Downloads/meh', 'wb') as file:
+        with open('/home/ferran/Downloads/decode_kernels_distinct_kernels', 'wb') as file:
             pickle.dump(all_model_results, file)
     else:
         import pickle
-        with open('/home/ferran/Downloads/meh', 'rb') as file:
+        with open('/home/ferran/Downloads/decode_kernels_distinct_kernels', 'rb') as file:
             all_model_results = pickle.load(file)
 
     # group kernels
@@ -406,25 +400,73 @@ def plot_batch_size_evolution(
     plt.savefig(os.path.join(path, f'decode_kernels_distinct_kernels'), bbox_inches='tight')
 
 
+def extract_longer_matrix_multiplication(
+        all_model_results: List[Dict[str, Any]],
+        path: str
+) -> None:
+    plt.style.use('ggplot')
+
+    if all_model_results is not None:
+        import pickle
+        with open('/home/ferran/Downloads/decode_kernels_distinct_kernels', 'wb') as file:
+            pickle.dump(all_model_results, file)
+    else:
+        import pickle
+        with open('/home/ferran/Downloads/decode_kernels_distinct_kernels', 'rb') as file:
+            all_model_results = pickle.load(file)
+
+    # sum matrix multiplication kernels durations
+    matrix_multiplication_kernels_durations = {
+        'sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64_stage6_warpsize2x2x1_tensor16x8x16_execute_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x128x64_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize256x128x64_warpgroupsize2x1x1_execute_segment_k_off_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x64_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x256x32_warpgroupsize2x1x1_execute_segment_k_off_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x64x64_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x64x64_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x128x64_warpgroupsize1x1x1_execute_segment_k_on_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x64_warpgroupsize1x1x1_execute_segment_k_on_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x256x64_warpgroupsize2x1x1_execute_segment_k_off_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x128x32_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize256x128x64_warpgroupsize2x1x1_execute_segment_k_on_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x256x64_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': 0,
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize256x128x32_warpgroupsize2x1x1_execute_segment_k_off_kernel__5x_cublas': 0
+    }
+    for index, model_results in enumerate(all_model_results):
+        for kernel_label, kernel_duration in model_results['kernel_durations'].items():
+            if kernel_label in matrix_multiplication_kernels_durations:
+                matrix_multiplication_kernels_durations[kernel_label] += kernel_duration
+
+    # sort
+    sorted_values = [(key, value) for value, key in sorted(zip(matrix_multiplication_kernels_durations.values(), matrix_multiplication_kernels_durations.keys()), reverse=True)]
+
+    # show
+    print(sorted_values)
 
 
 def main():
     '''for model in ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
         create_sqlite_databases(model)'''
 
-    '''model_results: List[Dict[str, Any]] = []
+    model_results: List[Dict[str, Any]] = []
     for model in ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
         model_results += extract_results(model, model)
 
     plot_batch_size_evolution(
         model_results,
         '.'
-    )'''
+    )
 
-    plot_batch_size_evolution(
+    '''plot_batch_size_evolution(
         None,
         '.'
-    )
+    )'''
+
+    '''# useful for a later on plot
+    extract_longer_matrix_multiplication(
+        None,
+        '.'
+    )'''
 
 
 if __name__ == '__main__':
