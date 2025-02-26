@@ -432,35 +432,68 @@ def extract_longer_matrix_multiplication(
         'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x256x64_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': 0,
         'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize256x128x32_warpgroupsize2x1x1_execute_segment_k_off_kernel__5x_cublas': 0
     }
+    matrix_multiplication_kernels_list = {
+        'sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize32x32x64_stage6_warpsize2x2x1_tensor16x8x16_execute_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x128x64_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize256x128x64_warpgroupsize2x1x1_execute_segment_k_off_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x64_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x256x32_warpgroupsize2x1x1_execute_segment_k_off_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x64x64_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x64x64_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x128x64_warpgroupsize1x1x1_execute_segment_k_on_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x128x64_warpgroupsize1x1x1_execute_segment_k_on_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x256x64_warpgroupsize2x1x1_execute_segment_k_off_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize128x128x32_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize256x128x64_warpgroupsize2x1x1_execute_segment_k_on_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize64x256x64_warpgroupsize1x1x1_execute_segment_k_off_kernel__5x_cublas': [],
+        'sm90_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize256x128x32_warpgroupsize2x1x1_execute_segment_k_off_kernel__5x_cublas': []
+    }
+    matrix_multiplication_kernels_times = matrix_multiplication_kernels_durations.copy()
+    to_remove = set()
     for index, model_results in enumerate(all_model_results):
-        for kernel_label, kernel_duration in model_results['kernel_durations'].items():
-            if kernel_label in matrix_multiplication_kernels_durations:
-                matrix_multiplication_kernels_durations[kernel_label] += kernel_duration
+        if model_results['model'] == 'opt-1.3b':
+            for kernel_label in matrix_multiplication_kernels_durations.keys():
+                if kernel_label in model_results['kernel_durations']:
+                    matrix_multiplication_kernels_durations[kernel_label] += model_results['kernel_durations'][kernel_label]
+                    matrix_multiplication_kernels_times[kernel_label] += 1
+                    matrix_multiplication_kernels_list[kernel_label] += [model_results['batch_size']]
+                else:
+                    to_remove.add(kernel_label)
+            '''for kernel_label, kernel_duration in model_results['kernel_durations'].items():
+                if kernel_label in matrix_multiplication_kernels_durations:
+                    matrix_multiplication_kernels_durations[kernel_label] += kernel_duration'''
+    '''for kernel_label in to_remove:
+        del matrix_multiplication_kernels_durations[kernel_label]'''
 
     # sort
-    sorted_values = [(key, value) for value, key in sorted(zip(matrix_multiplication_kernels_durations.values(), matrix_multiplication_kernels_durations.keys()), reverse=True)]
+    sorted_values_durations = [(key, value) for value, key in sorted(zip(matrix_multiplication_kernels_durations.values(), matrix_multiplication_kernels_durations.keys()), reverse=True)]
+    sorted_values_times = [(key, value) for value, key in sorted(zip(matrix_multiplication_kernels_times.values(), matrix_multiplication_kernels_times.keys()), reverse=True)]
 
     # show
-    print(sorted_values)
+    print(sorted_values_durations)
+    print('----------------------')
+    print(sorted_values_times)
+    print('----------------------')
+    print(matrix_multiplication_kernels_list)
 
 
 def main():
     '''for model in ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
         create_sqlite_databases(model)'''
 
-    model_results: List[Dict[str, Any]] = []
+    '''model_results: List[Dict[str, Any]] = []
     for model in ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
         model_results += extract_results(model, model)
 
     plot_batch_size_evolution(
         model_results,
         '.'
-    )
+    )'''
 
-    '''plot_batch_size_evolution(
+    plot_batch_size_evolution(
         None,
         '.'
-    )'''
+    )
 
     '''# useful for a later on plot
     extract_longer_matrix_multiplication(
