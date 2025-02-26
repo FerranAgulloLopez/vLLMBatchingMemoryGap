@@ -13,24 +13,7 @@ import numpy as np
 # MAYBE THE REPORT IS MISSING BECAUSE OF REPO SIZE CONSTRAINTS. IN THAT CASE, RERUN THE EXPS WITH THE PROVIDED CONFIG
 
 
-def cut_metric_values_timewise(metric_x: np.ndarray, metric_y: np.ndarray, init_cut: float, end_cut: float):
-    assert init_cut < end_cut
-    assert metric_x[0] < init_cut < metric_x[-1]
-    assert metric_x[0] < end_cut < metric_x[-1]
-    init_index: int = None
-    end_index: int = None
-    iter_index: int = 0
-    while (init_index is None or end_index is None) and iter_index < len(metric_x):
-        if init_index is None and init_cut < metric_x[iter_index]:
-            init_index = iter_index
-        if end_index is None and end_cut < metric_x[iter_index]:
-            end_index = iter_index
-        iter_index += 1
-    assert init_cut < end_cut
-    return metric_x[init_index:end_index], metric_y[init_index:end_index]
-
-
-def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str]):
+def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str], start: float, end: float):
     try:
         conn = sqlite3.connect(path)
         metric_names = ''
@@ -43,7 +26,7 @@ def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str]):
                 SELECT metricName, timestamp, value
                 FROM GPU_METRICS
                 JOIN TARGET_INFO_GPU_METRICS USING (metricId)
-                WHERE ({metric_names})
+                WHERE ({metric_names}) AND timestamp > {start} AND timestamp < {end}
             """
         df = pd.read_sql_query(query, conn)
         conn.close()
@@ -64,15 +47,14 @@ def nsight_extract_gpu_metric_arrays(path: str, metrics: List[str]):
     return metric_results
 
 
-def nsight_extract_kernel_start_values(path: str, kernel_name: str):
+def nsight_extract_prefill_first_decode_step_start_end_time(path: str):
     try:
         conn = sqlite3.connect(path)
         query = f"""
-                SELECT start, end
-                FROM CUPTI_ACTIVITY_KIND_KERNEL
-                JOIN StringIds ON CUPTI_ACTIVITY_KIND_KERNEL.shortName = StringIds.id
-                WHERE StringIds.value == '{kernel_name}' AND streamId == 7
-            """
+                SELECT text, start, end
+                FROM NVTX_EVENTS
+                WHERE eventType == 60 AND text == 'DecodeStep0'
+            """ # type 34 correspond to mark events
         df = pd.read_sql_query(query, conn)
         conn.close()
     except Exception as e:
@@ -83,7 +65,7 @@ def nsight_extract_kernel_start_values(path: str, kernel_name: str):
 
     df = df.to_numpy()
 
-    return df[:, 0]
+    return df[0, 1], df[0, 2]
 
 
 def nsight_extract_kernels_start_end_values_timewise(path: str, start_time: float, end_time: float):
@@ -140,7 +122,10 @@ def extract_experiment_metric(path: str) -> Dict[str, Any]:
     if found is not None:
         flash_attention = False
 
-    # extract complete GPU metrics
+    # find decode first step start/end
+    decode_first_step_start, decode_first_step_end = nsight_extract_prefill_first_decode_step_start_end_time(nsight_sqlite_file)
+
+    # extract first decode step GPU metrics
     gpu_metrics = [
         'SMs Active [Throughput %]',
         'Compute Warps in Flight [Throughput %]',
@@ -148,41 +133,21 @@ def extract_experiment_metric(path: str) -> Dict[str, Any]:
         'DRAM Read Bandwidth [Throughput %]',
         'DRAM Write Bandwidth [Throughput %]'
     ]
-    gpu_metrics_values = nsight_extract_gpu_metric_arrays(nsight_sqlite_file, gpu_metrics)
-
-    # find decode start and end -> start of flash_fwd_splitkv_kernel
-    kernel_start_values = nsight_extract_kernel_start_values(nsight_sqlite_file, 'flash_fwd_splitkv_kernel' if flash_attention else 'paged_attention_v1_kernel')
-    decode_start = np.min(kernel_start_values)
-    decode_end = np.max(kernel_start_values)
-
-    # manually extract first decode step
-    decode_start = decode_start - 3427350
-    decode_end = decode_start + (decode_end - decode_start) / 338 - 4569800
+    gpu_metrics_values_decode_raw = nsight_extract_gpu_metric_arrays(nsight_sqlite_file, gpu_metrics, decode_first_step_start, decode_first_step_end)
+    output['gpu_metrics_values_first_decode_step'] = gpu_metrics_values_decode_raw
 
     '''fig, ax = plt.subplots()
-    meh = cut_metric_values_timewise(gpu_metrics_values['DRAM Read Bandwidth [Throughput %]']['x'], gpu_metrics_values['DRAM Read Bandwidth [Throughput %]']['y'], decode_start, decode_end)
+    meh = gpu_metrics_values_decode_raw['DRAM Read Bandwidth [Throughput %]']['x'], gpu_metrics_values_decode_raw['DRAM Read Bandwidth [Throughput %]']['y']
     ax.plot(meh[0], meh[1], label='DRAM read')
-    meh = cut_metric_values_timewise(gpu_metrics_values['Compute Warps in Flight [Throughput %]']['x'], gpu_metrics_values['Compute Warps in Flight [Throughput %]']['y'], decode_start, decode_end)
+    meh = gpu_metrics_values_decode_raw['Compute Warps in Flight [Throughput %]']['x'], gpu_metrics_values_decode_raw['Compute Warps in Flight [Throughput %]']['y']
     ax.plot(meh[0], meh[1], label='SM UnOccupancy')
     ax.grid()
     ax.legend()
-    fig.savefig("/home/ferran/Downloads/decode.png")'''
-
-    # extract decode GPU metric values
-    gpu_metrics_values_decode = {}
-    for gpu_metric in gpu_metrics:
-        x_values = gpu_metrics_values[gpu_metric]['x']
-        y_values = gpu_metrics_values[gpu_metric]['y']
-        x_values_decode, y_values_decode = cut_metric_values_timewise(x_values, y_values, decode_start, decode_end)
-        gpu_metrics_values_decode[gpu_metric] = {
-            'x': x_values_decode,
-            'y': y_values_decode
-        }
-    output['gpu_metrics_values_decode'] = gpu_metrics_values_decode
+    fig.savefig("/home/ferran/Downloads/first_decode_step.png")'''
 
     # extract kernel executions
     output['kernels'] = {}
-    kernels_start_end = nsight_extract_kernels_start_end_values_timewise(nsight_sqlite_file, decode_start, decode_end)
+    kernels_start_end = nsight_extract_kernels_start_end_values_timewise(nsight_sqlite_file, decode_first_step_start, decode_first_step_end)
     for index in range(np.shape(kernels_start_end)[0]):
         kernel_name: str = str(kernels_start_end[index, 0])
         kernel_start: float = float(kernels_start_end[index, 1])
@@ -213,8 +178,6 @@ def extract_results(path: str, model: str) -> List[Dict[str, Any]]:
             input_length: int = int(folder.split('_')[1])
             output_length: int = int(folder.split('_')[2])
             batch_size: int = int(folder.split('_')[3])
-            if batch_size != 160:
-                continue
             try:
                 metrics = extract_experiment_metric(os.path.join(path, folder))
             except Exception as e:
@@ -238,101 +201,7 @@ def extract_results(path: str, model: str) -> List[Dict[str, Any]]:
     return results
 
 
-def __prepare_lines(results: List[Dict[str, float]], x_axis: str, y_axis: str, selection: str) -> List[
-    Tuple[str, List[int], List[float]]]:
-    output_tmp: Dict[str, Tuple[List[int], List[float]]] = {}
-    for item in results:
-        selection_id = item[selection]
-        if selection_id not in output_tmp:
-            output_tmp[selection_id] = ([], [])
-        if x_axis not in item:
-            output_tmp[selection_id][0].append(None)
-        else:
-            output_tmp[selection_id][0].append(item[x_axis])
-        if y_axis not in item:
-            output_tmp[selection_id][1].append(None)
-        else:
-            output_tmp[selection_id][1].append(item[y_axis])
-    output: List[Tuple[str, List[int], List[float]]] = []
-    for key, (x_values, y_values) in output_tmp.items():
-        x_line = [x_value for index, x_value in enumerate(x_values) if
-                  x_value is not None and y_values[index] is not None]
-        y_line = [y_value for index, y_value in enumerate(y_values) if
-                  y_value is not None and x_values[index] is not None]
-        y_line = [y_value for _, y_value in sorted(zip(x_line, y_line))]
-        x_line.sort()
-        output.append(
-            (
-                key,
-                x_line,
-                y_line
-            )
-        )
-    output = [value for _, value in sorted(zip([value[0] for value in output], output))]
-
-    return output
-
-
-def plot_decode_timewise(
-        all_model_results: List[Dict[str, Any]],
-        path: str
-) -> None:
-    plt.style.use('ggplot')
-
-    if all_model_results is not None:
-        import pickle
-        with open('/home/ferran/Downloads/meh', 'wb') as file:
-            pickle.dump(all_model_results, file)
-    else:
-        import pickle
-        with open('/home/ferran/Downloads/meh', 'rb') as file:
-            all_model_results = pickle.load(file)
-
-    nrows = 2
-    ncols = 1
-    # fig, axs = plt.subplots(nrows, ncols, figsize=(ncols * 6, nrows * 4), sharex=True)
-    fig, axs = plt.subplot_mosaic('A;B', gridspec_kw=dict(height_ratios=[1, 0.5]), sharex=True)
-    # fig.tight_layout()
-    # fig.subplots_adjust(hspace=0, wspace=0)
-
-    metrics = [
-        'Compute Warps in Flight [Throughput %]',
-        'Unallocated Warps in Active SMs [Throughput %]',
-        'DRAM Read Bandwidth [Throughput %]'
-    ]
-    metrics_labels = [
-        'Compute Warps in Flight',
-        'Unallocated Warps in Active SMs',
-        'DRAM Read Throughput'
-    ]
-
-    params = {'mathtext.default': 'regular'}
-    plt.rcParams.update(params)
-
-    results = all_model_results[0]
-    start_index = 50
-    end_index = 80
-    start_time = results['gpu_metrics_values_decode'][metrics[0]]['x'][start_index]
-    end_time = results['gpu_metrics_values_decode'][metrics[0]]['x'][end_index]
-
-    index_y = 'A'
-    for metric_index, metric in enumerate(metrics):
-        y_line = results['gpu_metrics_values_decode'][metric]['y'][start_index:end_index]
-        # y_line = max_pool1d_strided(y_line, 5, stride=4)
-        x_line = results['gpu_metrics_values_decode'][metric]['x'][start_index:end_index]
-        line = axs[index_y].plot(
-            x_line,
-            y_line,
-            marker='o',
-            label=metrics_labels[metric_index]
-        )[0]
-    axs[index_y].set_ylabel('Usage proportion (%)', fontsize=10)
-    axs[index_y].xaxis.set_ticklabels([])
-    axs[index_y].legend(loc='center', bbox_to_anchor=(0.5, 0.3), fontsize=10)
-
-    index_y = 'B'
-
-    # group kernels
+def __group_kernels(results: Dict[str, Any]) -> Dict[str, List[Tuple[float, float]]]:
     grouping_labels = {
         'matrix_multiplication': 'matrix multiplication',
         'attention': 'attention mechanism',
@@ -396,13 +265,16 @@ def plot_decode_timewise(
         'rms_norm_kernel': grouping_labels['norm'],
         'rotary_embedding_kernel': grouping_labels['other']
     }
-    grouped_kernels = {}
+    grouped_kernels: Dict[str, List[Tuple[float, float]]] = {}
     for kernel_label, kernel_starts_ends in results['kernels'].items():
         new_label = kernel_grouping[kernel_label]
         if new_label not in grouped_kernels:
             grouped_kernels[new_label] = []
         grouped_kernels[new_label] += kernel_starts_ends
+    return grouped_kernels
 
+
+def __cut_kernels_by_time(grouped_kernels: Dict[str, List[Tuple[float, float]]], start_time, end_time):
     # filter executions by time
     for kernel_label, kernel_starts_ends in grouped_kernels.items():
         filtered_executions = []
@@ -410,48 +282,145 @@ def plot_decode_timewise(
             if kernel_start > start_time and kernel_end < end_time:
                 filtered_executions.append((kernel_start, kernel_end))
         grouped_kernels[kernel_label] = filtered_executions
+    return grouped_kernels
 
-    # plot kernels
-    legend_patches = {}
-    important_kernel_types = ['matrix multiplication', 'attention mechanism']
-    colors = ['#348ABD', '#E24A33']
-    for level_index, kernel_label in enumerate(important_kernel_types):
-        legend_patches[kernel_label] = patches.Patch(color=colors[level_index], label=kernel_label)
-        for kernel_execution_index, (kernel_start, kernel_end) in enumerate(grouped_kernels[kernel_label]):
-            rect = patches.FancyBboxPatch(
-                (kernel_start, len(important_kernel_types) - level_index + 1 - 0.3),
-                kernel_end - kernel_start,
-                0.6,
-                boxstyle='round,pad=0.1',
-                edgecolor='black',
-                facecolor=colors[level_index],
-                linewidth=0
-            )
-            axs[index_y].add_patch(rect)
 
-    axs[index_y].set_xlabel('Time', fontsize=10)
-    axs[index_y].set_ylim((1, 4))
-    axs[index_y].get_yaxis().set_visible(False)
-    axs[index_y].xaxis.set_ticklabels([])
-    axs[index_y].legend(handles=legend_patches.values(), loc='center', fontsize=10)
+def plot_decode_timewise(
+        all_model_results: List[Dict[str, Any]],
+        path: str
+) -> None:
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 13,
+        'axes.titlesize': 15,
+        'axes.labelsize': 15,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12,
+        'legend.fontsize': 10,
+        'lines.linewidth': 2.0,
+        'mathtext.default': 'regular',
+        'axes.grid': True,
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.4,
+        'figure.figsize': (7, 5)  # Consistent size for single plot
+    })
+
+    if all_model_results is not None:
+        import pickle
+        with open('/home/ferran/Downloads/decode_kernels_time_wise', 'wb') as file:
+            pickle.dump(all_model_results, file)
+    else:
+        import pickle
+        with open('/home/ferran/Downloads/decode_kernels_time_wise', 'rb') as file:
+            all_model_results = pickle.load(file)
+
+    # extract specific results for batch sizes 1 and 160
+    results_1 = None
+    results_160 = None
+    for model_results in all_model_results:
+        if model_results['batch_size'] == 1:
+            results_1 = model_results
+        elif model_results['batch_size'] == 160:
+            results_160 = model_results
+    assert results_1 is not None
+    assert results_160 is not None
+
+    # define figure
+    fig = plt.figure(figsize=(10, 8), constrained_layout=True, facecolor='white')
+    gs = GridSpec(nrows=2, ncols=2, figure=fig, height_ratios=[1, 0.5], hspace=0.05, wspace=0)
+
+    metrics = [
+        'Compute Warps in Flight [Throughput %]',
+        'Unallocated Warps in Active SMs [Throughput %]',
+        'DRAM Read Bandwidth [Throughput %]'
+    ]
+    metrics_labels = [
+        'Compute Warps in Flight',
+        'Unallocated Warps in Active SMs',
+        'DRAM Read Throughput'
+    ]
+
+    # define start and end indexes of plots inside the first decode step
+    start_index_1 = 50
+    end_index_1 = 65
+    start_index_160 = 50
+    end_index_160 = 80
+
+    # top plots
+    for index_results, results, start_index, end_index in [(0, results_1, start_index_1, end_index_1), (1, results_160, start_index_160, end_index_160)]:
+        axs = fig.add_subplot(gs[0, index_results])
+        for metric_index, metric in enumerate(metrics):
+            y_line = results['gpu_metrics_values_first_decode_step'][metric]['y'][start_index:end_index]
+            x_line = results['gpu_metrics_values_first_decode_step'][metric]['x'][start_index:end_index]
+            line = axs.plot(
+                x_line,
+                y_line,
+                marker='',
+                label=metrics_labels[metric_index]
+            )[0]
+        axs.yaxis.set_ticks([0, 20, 40, 60, 80, 100])
+        axs.xaxis.set_ticklabels([])
+
+        if index_results == 0:
+            axs.set_ylabel('Usage proportion (%)', fontsize=10)
+            axs.legend(loc='center', bbox_to_anchor=(1.1, 1.2), fontsize=10)  # TODO refactor
+        else:
+            axs.yaxis.set_ticklabels([])
+
+    # bottom plots
+    for index_results, results, start_index, end_index in [(0, results_1, start_index_1, end_index_1), (1, results_160, start_index_160, end_index_160)]:
+        axs = fig.add_subplot(gs[1, index_results])
+
+        # define start end times in seconds (not in indexes)
+        start_time = next(iter(results['gpu_metrics_values_first_decode_step'].values()))['x'][start_index]
+        end_time = next(iter(results['gpu_metrics_values_first_decode_step'].values()))['x'][end_index]
+
+        # group kernels by generic names and filter by time
+        grouped_kernels = __group_kernels(results)
+        grouped_kernels = __cut_kernels_by_time(grouped_kernels, start_time, end_time)
+
+        # plot
+        legend_patches = {}
+        important_kernel_types = ['matrix multiplication', 'attention mechanism']
+        colors = ['#348ABD', '#E24A33']
+        for level_index, kernel_label in enumerate(important_kernel_types):
+            legend_patches[kernel_label] = patches.Patch(color=colors[level_index], label=kernel_label)
+            for kernel_execution_index, (kernel_start, kernel_end) in enumerate(grouped_kernels[kernel_label]):
+                rect = patches.FancyBboxPatch(
+                    (kernel_start, len(important_kernel_types) - level_index + 1 - 0.3),
+                    kernel_end - kernel_start,
+                    0.6,
+                    boxstyle='round,pad=0.1',
+                    edgecolor='black',
+                    facecolor=colors[level_index],
+                    linewidth=0
+                )
+                axs.add_patch(rect)
+
+        axs.set_xlabel('Time', fontsize=10)
+        axs.set_ylim((1, 4))
+        axs.set_xlim((start_time, end_time))
+        axs.get_yaxis().set_visible(False)
+        axs.xaxis.set_ticklabels([])
+        axs.legend(handles=legend_patches.values(), loc='center', fontsize=10)
 
     plt.savefig(os.path.join(path, f'decode_kernels_timewise'), bbox_inches='tight')
 
 
 def main():
-    model_results: List[Dict[str, Any]] = []
+    '''model_results: List[Dict[str, Any]] = []
     model: str = 'llama-2-7b'
     model_results += extract_results(model, model)
 
     plot_decode_timewise(
         model_results,
         '.'
-    )
+    )'''
 
-    '''plot_decode_timewise(
+    plot_decode_timewise(
         None,
         '.'
-    )'''
+    )
 
 
 if __name__ == '__main__':
