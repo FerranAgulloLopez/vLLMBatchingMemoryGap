@@ -296,15 +296,25 @@ def plot_batch_size_evolution(
     bar_width = 0.35 # 0.35
     index = np.arange(len(batch_sizes))
 
-    averages = {metric: [] for metric in metrics}
-    maxima = {metric: [] for metric in metrics}
+    averages_dct = {metric: {} for metric in metrics}
+    maxima_dct = {metric: {} for metric in metrics}
     for item in all_model_results:
         if item['batch_size'] in batch_sizes:
             for metric in metrics:
                 avg_value = np.mean(item['gpu_metrics_values_decode'][metric])
                 max_value = np.max(item['gpu_metrics_values_decode'][metric])
-                averages[metric].append(avg_value)
-                maxima[metric].append(max_value)
+                averages_dct[metric][item['batch_size']] = avg_value
+                maxima_dct[metric][item['batch_size']] = max_value
+
+    averages = {metric: [] for metric in metrics}
+    maxima = {metric: [] for metric in metrics}
+    for metric in metrics:
+        averages_dct[metric] = dict(sorted(averages_dct[metric].items()))
+        maxima_dct[metric] = dict(sorted(maxima_dct[metric].items()))
+        for k,v in averages_dct[metric].items():
+            averages[metric].append(v)
+        for k,v in maxima_dct[metric].items():
+            maxima[metric].append(v)
 
     for i, metric in enumerate(metrics):
         ax_top.bar(index + i * bar_width, maxima[metric], bar_width, color=metric_colors[i], hatch='//', edgecolor='black')
@@ -347,10 +357,19 @@ def plot_batch_size_evolution(
     ax_bottom_right = fig.add_subplot(gs[0, 1])
     plot_time_series(ax_bottom_right, results_batch_size_512, 512, start_index=30, end_index=1080)
     ax_bottom_right.yaxis.set_ticklabels([])
+    
+    from matplotlib.patches import Patch
 
     legend_handles = [Line2D([0], [0], color=metric_colors[i], lw=7, label=metrics_labels[i]) for i in range(len(metrics))]
-    fig.legend(handles=legend_handles, loc='upper center', ncol=len(metrics), frameon=False, fontsize=12, bbox_to_anchor=(0.5, 0.95))
+    mean_patch = Patch(facecolor='gray', edgecolor='black', label='Mean')
+    max_patch = Patch(facecolor='gray', edgecolor='black', hatch='//', label='Max')
 
+    # Extend legend handles
+    legend_handles.extend([mean_patch, max_patch])
+
+    # Create figure legend
+    fig.legend(handles=legend_handles, loc='upper center', ncol=len(metrics) + 2, frameon=False, fontsize=12, bbox_to_anchor=(0.5, 0.9))
+    
     # Save plot
     output_path = os.path.join(path, 'decode_kernels_batch_size_evolution.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)

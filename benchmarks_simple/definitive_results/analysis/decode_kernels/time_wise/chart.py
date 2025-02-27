@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.gridspec import GridSpec
 import numpy as np
+from matplotlib.lines import Line2D
 
 # FOR RUNNING SCRIPT, EXPORT FIRST nsys-rep REPORT WITH "nsys export --separate-strings yes --type sqlite .nsys-rep"
 # MAYBE THE REPORT IS MISSING BECAUSE OF REPO SIZE CONSTRAINTS. IN THAT CASE, RERUN THE EXPS WITH THE PROVIDED CONFIG
@@ -203,8 +204,8 @@ def extract_results(path: str, model: str) -> List[Dict[str, Any]]:
 
 def __group_kernels(results: Dict[str, Any]) -> Dict[str, List[Tuple[float, float]]]:
     grouping_labels = {
-        'matrix_multiplication': 'matrix multiplication',
-        'attention': 'attention mechanism',
+        'matrix_multiplication': 'Matrix multiplication',
+        'attention': 'Attention mechanism',
         'sort': 'sort and others',
         'device': 'device',
         'scatter_gather': 'scatter and gather',
@@ -289,29 +290,13 @@ def plot_decode_timewise(
         all_model_results: List[Dict[str, Any]],
         path: str
 ) -> None:
-    plt.rcParams.update({
-        'font.family': 'serif',
-        'font.size': 13,
-        'axes.titlesize': 15,
-        'axes.labelsize': 15,
-        'xtick.labelsize': 12,
-        'ytick.labelsize': 12,
-        'legend.fontsize': 10,
-        'lines.linewidth': 2.0,
-        'mathtext.default': 'regular',
-        'axes.grid': True,
-        'grid.linestyle': '--',
-        'grid.linewidth': 0.4,
-        'figure.figsize': (7, 5)  # Consistent size for single plot
-    })
-
     if all_model_results is not None:
         import pickle
-        with open('/home/ferran/Downloads/decode_kernels_time_wise', 'wb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_time_wise', 'wb') as file:
             pickle.dump(all_model_results, file)
     else:
         import pickle
-        with open('/home/ferran/Downloads/decode_kernels_time_wise', 'rb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_time_wise', 'rb') as file:
             all_model_results = pickle.load(file)
 
     # extract specific results for batch sizes 1 and 160
@@ -325,10 +310,6 @@ def plot_decode_timewise(
     assert results_1 is not None
     assert results_160 is not None
 
-    # define figure
-    fig = plt.figure(figsize=(10, 8), constrained_layout=True, facecolor='white')
-    gs = GridSpec(nrows=2, ncols=2, figure=fig, height_ratios=[1, 0.5], hspace=0.05, wspace=0)
-
     metrics = [
         'Compute Warps in Flight [Throughput %]',
         'Unallocated Warps in Active SMs [Throughput %]',
@@ -340,11 +321,31 @@ def plot_decode_timewise(
         'DRAM Read Throughput'
     ]
 
-    # define start and end indexes of plots inside the first decode step
+    fig = plt.figure(figsize=(8, 6), constrained_layout=True, facecolor='white')
+    gs = GridSpec(2, 2, height_ratios=[1, 0.75], wspace=0.1, hspace=0.3)
+
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 13,
+        'axes.titlesize': 13,
+        'axes.labelsize': 13,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12,
+        'legend.fontsize': 10,
+        'lines.linewidth': 2.0,
+        'mathtext.default': 'regular',
+        'axes.grid': True,
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.4,
+        'figure.figsize': (7, 5)  # Consistent size for single plot
+    })
+
     start_index_1 = 50
     end_index_1 = 65
     start_index_160 = 50
     end_index_160 = 80
+
+    colors_list = ['#0072B2', '#E69F00', '#009E73', '#D55E00']
 
     # top plots
     for index_results, results, start_index, end_index in [(0, results_1, start_index_1, end_index_1), (1, results_160, start_index_160, end_index_160)]:
@@ -356,14 +357,20 @@ def plot_decode_timewise(
                 x_line,
                 y_line,
                 marker='',
-                label=metrics_labels[metric_index]
+                label=metrics_labels[metric_index],
+                linewidth=2,
+                color=colors_list[metric_index]
             )[0]
         axs.yaxis.set_ticks([0, 20, 40, 60, 80, 100])
         axs.xaxis.set_ticklabels([])
+        axs.get_xaxis().set_visible(False)
+
+        axs.set_ylim(bottom=0)
+        axs.set_xlim((x_line[0], x_line[-1]))
 
         if index_results == 0:
-            axs.set_ylabel('Usage proportion (%)', fontsize=10)
-            axs.legend(loc='center', bbox_to_anchor=(1.1, 1.2), fontsize=10)  # TODO refactor
+            axs.set_ylabel('Usage proportion (%)', fontsize=13)
+            axs.legend(loc='center', bbox_to_anchor=(1, 1.2), fontsize=11)  # TODO refactor
         else:
             axs.yaxis.set_ticklabels([])
 
@@ -371,21 +378,20 @@ def plot_decode_timewise(
     for index_results, results, start_index, end_index in [(0, results_1, start_index_1, end_index_1), (1, results_160, start_index_160, end_index_160)]:
         axs = fig.add_subplot(gs[1, index_results])
 
-        # define start end times in seconds (not in indexes)
         start_time = next(iter(results['gpu_metrics_values_first_decode_step'].values()))['x'][start_index]
         end_time = next(iter(results['gpu_metrics_values_first_decode_step'].values()))['x'][end_index]
 
-        # group kernels by generic names and filter by time
         grouped_kernels = __group_kernels(results)
         grouped_kernels = __cut_kernels_by_time(grouped_kernels, start_time, end_time)
 
         # plot
         legend_patches = {}
-        important_kernel_types = ['matrix multiplication', 'attention mechanism']
+        important_kernel_types = ['Matrix multiplication', 'Attention mechanism']
         colors = ['#348ABD', '#E24A33']
         for level_index, kernel_label in enumerate(important_kernel_types):
-            legend_patches[kernel_label] = patches.Patch(color=colors[level_index], label=kernel_label)
-            for kernel_execution_index, (kernel_start, kernel_end) in enumerate(grouped_kernels[kernel_label]):
+            legend_patches[kernel_label] = patches.Patch(color=colors[level_index], label=kernel_label, linewidth=0.1)
+            
+            for kernel_start, kernel_end in grouped_kernels[kernel_label]:
                 rect = patches.FancyBboxPatch(
                     (kernel_start, len(important_kernel_types) - level_index + 1 - 0.3),
                     kernel_end - kernel_start,
@@ -396,16 +402,25 @@ def plot_decode_timewise(
                     linewidth=0
                 )
                 axs.add_patch(rect)
+        
 
-        axs.set_xlabel('Time', fontsize=10)
+        if index_results == 0:
+            axs.set_xlabel('Time - Batch size 1', fontsize=13)
+            axs.set_ylabel('Kernel timeline', fontsize=13)
+        
+        if index_results == 1:
+            axs.set_xlabel('Time - Batch size 160', fontsize=13)
+
         axs.set_ylim((1, 4))
         axs.set_xlim((start_time, end_time))
-        axs.get_yaxis().set_visible(False)
+        axs.get_yaxis().set_visible(True)
         axs.xaxis.set_ticklabels([])
-        axs.legend(handles=legend_patches.values(), loc='center', fontsize=10)
+        axs.yaxis.set_ticklabels([])
 
-    plt.savefig(os.path.join(path, f'decode_kernels_timewise'), bbox_inches='tight')
-
+    fig.legend(handles=list(legend_patches.values()), loc='upper center', ncol=2, fontsize=10, frameon=True, bbox_to_anchor=(0.5, 0.47))
+    output_path = os.path.join(path, 'decode_kernels_timewise.pdf')
+    plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
+    
 
 def main():
     '''model_results: List[Dict[str, Any]] = []

@@ -230,21 +230,19 @@ def plot_batch_size_evolution(
         all_model_results: List[Dict[str, Any]],
         path: str
 ) -> None:
-    plt.style.use('ggplot')
-
     if all_model_results is not None:
         import pickle
-        with open('/home/ferran/Downloads/decode_kernels_distinct_kernels', 'wb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_distinct_kernels', 'wb') as file:
             pickle.dump(all_model_results, file)
     else:
         import pickle
-        with open('/home/ferran/Downloads/decode_kernels_distinct_kernels', 'rb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_distinct_kernels', 'rb') as file:
             all_model_results = pickle.load(file)
 
     # group kernels
     grouping_labels = {
-        'matrix_multiplication': 'matrix multiplication',
-        'attention': 'attention mechanism',
+        'matrix_multiplication': 'Matrix multiplication',
+        'attention': 'Attention mechanism',
         'sort': 'sort and others',
         'device': 'device',
         'scatter_gather': 'scatter and gather',
@@ -320,7 +318,7 @@ def plot_batch_size_evolution(
         all_kernel_time: float = 0
         for kernel_label, kernel_duration in model_results['kernel_durations_grouped'].items():
             all_kernel_time += float(kernel_duration)
-        all_model_results[index]['kernel_durations_grouped']['python code'] = decode_time - all_kernel_time
+        all_model_results[index]['kernel_durations_grouped']['CPU time'] = decode_time - all_kernel_time
 
     # compute proportion
     for index, model_results in enumerate(all_model_results):
@@ -369,8 +367,24 @@ def plot_batch_size_evolution(
             if filter_out_kernel in batch_size_kernels:
                 del kernel_durations_average_batch_size[batch_size][filter_out_kernel]
 
+    params = {'mathtext.default': 'regular'}
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 13,
+        'axes.titlesize': 14,
+        'axes.labelsize': 14,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12,
+        'legend.fontsize': 10,
+        'lines.linewidth': 2.0,
+        'mathtext.default': 'regular',
+        'axes.grid': True,
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.4,
+        'figure.figsize': (7, 5)  # Consistent size for single plot
+    })
     # plot
-    fig, ax = plt.subplots(layout='constrained', figsize=(9, 6))
+    fig, ax = plt.subplots(layout='constrained', figsize=(6, 4))
     width = 0.15  # the width of the bars
     multiplier = 0
     x_line_labels = kernel_durations_average_batch_size.keys()
@@ -397,7 +411,8 @@ def plot_batch_size_evolution(
     handles = [handles[1], handles[0], handles[2]]
     labels = [labels[1], labels[0], labels[2]]
     ax.legend(handles, labels, loc='upper right', fontsize=10)
-    plt.savefig(os.path.join(path, f'decode_kernels_distinct_kernels'), bbox_inches='tight')
+    output_path = os.path.join(path, 'decode_kernels_distinct_kernels.pdf')
+    plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
 
 
 def extract_longer_matrix_multiplication(
@@ -408,11 +423,11 @@ def extract_longer_matrix_multiplication(
 
     if all_model_results is not None:
         import pickle
-        with open('/home/ferran/Downloads/decode_kernels_distinct_kernels', 'wb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_distinct_kernels', 'wb') as file:
             pickle.dump(all_model_results, file)
     else:
         import pickle
-        with open('/home/ferran/Downloads/decode_kernels_distinct_kernels', 'rb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_distinct_kernels', 'rb') as file:
             all_model_results = pickle.load(file)
 
     # sum matrix multiplication kernels durations
