@@ -320,9 +320,6 @@ def plot_decode_timewise(
         'Unallocated Warps in Active SMs',
         'DRAM Read Throughput'
     ]
-    # define figure
-    # fig = plt.figure(figsize=(8, 6), constrained_layout=True, facecolor='white')
-    # gs = GridSpec(nrows=2, ncols=2, figure=fig, height_ratios=[1, 0.5], hspace=0.05, wspace=0)
 
     fig = plt.figure(figsize=(8, 6), constrained_layout=True, facecolor='white')
     gs = GridSpec(2, 2, height_ratios=[1, 0.75], wspace=0.1, hspace=0.3)
@@ -330,8 +327,8 @@ def plot_decode_timewise(
     plt.rcParams.update({
         'font.family': 'serif',
         'font.size': 13,
-        'axes.titlesize': 15,
-        'axes.labelsize': 15,
+        'axes.titlesize': 13,
+        'axes.labelsize': 13,
         'xtick.labelsize': 12,
         'ytick.labelsize': 12,
         'legend.fontsize': 10,
@@ -343,11 +340,12 @@ def plot_decode_timewise(
         'figure.figsize': (7, 5)  # Consistent size for single plot
     })
 
-    # define start and end indexes of plots inside the first decode step
     start_index_1 = 50
     end_index_1 = 65
     start_index_160 = 50
     end_index_160 = 80
+
+    colors_list = ['#0072B2', '#E69F00', '#009E73', '#D55E00']
 
     # top plots
     for index_results, results, start_index, end_index in [(0, results_1, start_index_1, end_index_1), (1, results_160, start_index_160, end_index_160)]:
@@ -360,7 +358,8 @@ def plot_decode_timewise(
                 y_line,
                 marker='',
                 label=metrics_labels[metric_index],
-                linewidth=2
+                linewidth=2,
+                color=colors_list[metric_index]
             )[0]
         axs.yaxis.set_ticks([0, 20, 40, 60, 80, 100])
         axs.xaxis.set_ticklabels([])
@@ -370,8 +369,8 @@ def plot_decode_timewise(
         axs.set_xlim((x_line[0], x_line[-1]))
 
         if index_results == 0:
-            axs.set_ylabel('Usage proportion (%)', fontsize=10)
-            axs.legend(loc='center', bbox_to_anchor=(1, 1.2), fontsize=10)  # TODO refactor
+            axs.set_ylabel('Usage proportion (%)', fontsize=13)
+            axs.legend(loc='center', bbox_to_anchor=(1, 1.2), fontsize=11)  # TODO refactor
         else:
             axs.yaxis.set_ticklabels([])
 
@@ -379,11 +378,9 @@ def plot_decode_timewise(
     for index_results, results, start_index, end_index in [(0, results_1, start_index_1, end_index_1), (1, results_160, start_index_160, end_index_160)]:
         axs = fig.add_subplot(gs[1, index_results])
 
-        # define start end times in seconds (not in indexes)
         start_time = next(iter(results['gpu_metrics_values_first_decode_step'].values()))['x'][start_index]
         end_time = next(iter(results['gpu_metrics_values_first_decode_step'].values()))['x'][end_index]
 
-        # group kernels by generic names and filter by time
         grouped_kernels = __group_kernels(results)
         grouped_kernels = __cut_kernels_by_time(grouped_kernels, start_time, end_time)
 
@@ -408,11 +405,11 @@ def plot_decode_timewise(
         
 
         if index_results == 0:
-            axs.set_xlabel('Time - Batch size 1', fontsize=10)
-            axs.set_ylabel('Kernel timeline', fontsize=10)
+            axs.set_xlabel('Time - Batch size 1', fontsize=13)
+            axs.set_ylabel('Kernel timeline', fontsize=13)
         
         if index_results == 1:
-            axs.set_xlabel('Time - Batch size 160', fontsize=10)
+            axs.set_xlabel('Time - Batch size 160', fontsize=13)
 
         axs.set_ylim((1, 4))
         axs.set_xlim((start_time, end_time))
@@ -420,10 +417,7 @@ def plot_decode_timewise(
         axs.xaxis.set_ticklabels([])
         axs.yaxis.set_ticklabels([])
 
-    # Add legend below both bottom subplots
     fig.legend(handles=list(legend_patches.values()), loc='upper center', ncol=2, fontsize=10, frameon=True, bbox_to_anchor=(0.5, 0.47))
-
-
     output_path = os.path.join(path, 'decode_kernels_timewise.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
     
