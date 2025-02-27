@@ -179,11 +179,11 @@ def plot_decode_timewise(
 
     if all_model_results is not None:
         import pickle
-        with open('/home/ferran/Downloads/attention_kernel_roofline', 'wb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/attention_kernel_roofline', 'wb') as file:
             pickle.dump(all_model_results, file)
     else:
         import pickle
-        with open('/home/ferran/Downloads/attention_kernel_roofline', 'rb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/attention_kernel_roofline', 'rb') as file:
             all_model_results = pickle.load(file)
 
     # prepare data
@@ -308,7 +308,8 @@ def plot_decode_timewise(
         # axs.set_ylim(0, 0.2e13)
         axs.legend(loc='upper right', fontsize=10)
 
-    plt.savefig(os.path.join(path, f'attention_kernel_roofline'), bbox_inches='tight')
+    output_path = os.path.join(path, 'attention_kernel_roofline.pdf')
+    plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
 
 
 def table_models(
@@ -319,11 +320,11 @@ def table_models(
 
     if all_model_results is not None:
         import pickle
-        with open('/home/ferran/Downloads/attention_kernel_roofline', 'wb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau', 'wb') as file:
             pickle.dump(all_model_results, file)
     else:
         import pickle
-        with open('/home/ferran/Downloads/attention_kernel_roofline', 'rb') as file:
+        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau', 'rb') as file:
             all_model_results = pickle.load(file)
 
     # prepare data
