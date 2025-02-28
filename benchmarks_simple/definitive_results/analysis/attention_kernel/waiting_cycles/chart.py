@@ -1,6 +1,7 @@
 import os
 import re
 import glob
+import pickle
 from decimal import Decimal
 from typing import List, Tuple, Dict, Set, Any
 import matplotlib.pyplot as plt
@@ -12,6 +13,13 @@ from copy import deepcopy
 
 
 # MAYBE THE NCU REPORT IS MISSING BECAUSE OF REPO SIZE CONSTRAINTS. IN THAT CASE, RERUN THE EXPS WITH THE PROVIDED CONFIG
+
+def str_to_bool(string: str):
+    return string.lower() in ['true', '1', 't', 'y', 'yes']
+
+LOAD_PICKLE = str_to_bool(os.getenv('LOAD_PICKLE', False))
+PICKLE_ROOT_PATH = os.getenv('PICKLE_ROOT_PATH', None)
+assert PICKLE_ROOT_PATH is not None
 
 
 def extract_experiment_metric(path: str) -> Dict[str, Any]:
@@ -112,15 +120,6 @@ def plot_decode_cycles(
 ) -> None:
     plt.style.use('ggplot')
 
-    if all_model_results is not None:
-        import pickle
-        with open('/home/ferran/Downloads/attention_kernel_roofline', 'wb') as file:
-            pickle.dump(all_model_results, file)
-    else:
-        import pickle
-        with open('/home/ferran/Downloads/attention_kernel_roofline', 'rb') as file:
-            all_model_results = pickle.load(file)
-
     # prepare data
 
     # extract important information
@@ -187,23 +186,24 @@ def plot_decode_cycles(
 
 
 def main():
-    '''model_results: List[Dict[str, Any]] = []
-    model_results += extract_results('flash/opt-1.3b', 'opt-1.3b', 'flash')
-    model_results += extract_results('flash/llama-2-7b', 'llama-2-7b', 'flash')
-    model_results += extract_results('flash/llama-2-13b', 'llama-2-13b', 'flash')
-    model_results += extract_results('xformers/opt-1.3b', 'opt-1.3b', 'xformers')
-    model_results += extract_results('xformers/opt-2.7b', 'opt-2.7b', 'xformers')
-    model_results += extract_results('xformers/llama-2-7b', 'llama-2-7b', 'xformers')
-    model_results += extract_results('xformers/llama-2-13b', 'llama-2-13b', 'xformers')
+    model_results: List[Dict[str, Any]] = []
+    if LOAD_PICKLE:
+        with open(os.path.join(PICKLE_ROOT_PATH, 'attention_kernel_waiting_cycles'), 'rb') as file:
+            model_results = pickle.load(file)
+    else:
+        model_results += extract_results('flash/opt-1.3b', 'opt-1.3b', 'flash')
+        model_results += extract_results('flash/llama-2-7b', 'llama-2-7b', 'flash')
+        model_results += extract_results('flash/llama-2-13b', 'llama-2-13b', 'flash')
+        model_results += extract_results('xformers/opt-1.3b', 'opt-1.3b', 'xformers')
+        model_results += extract_results('xformers/opt-2.7b', 'opt-2.7b', 'xformers')
+        model_results += extract_results('xformers/llama-2-7b', 'llama-2-7b', 'xformers')
+        model_results += extract_results('xformers/llama-2-13b', 'llama-2-13b', 'xformers')
+
+        with open(os.path.join(PICKLE_ROOT_PATH, 'attention_kernel_waiting_cycles'), 'wb') as file:
+            pickle.dump(model_results, file)
 
     plot_decode_cycles(
         model_results,
-        '.'
-    )'''
-
-
-    plot_decode_cycles(
-        None,
         '.'
     )
 
