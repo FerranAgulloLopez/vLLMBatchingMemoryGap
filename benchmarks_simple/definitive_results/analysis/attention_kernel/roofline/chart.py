@@ -183,18 +183,6 @@ def plot_decode_timewise(
 ) -> None:
     plt.style.use('ggplot')
 
-<<<<<<< HEAD
-    if all_model_results is not None:
-        import pickle
-        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/attention_kernel_roofline', 'wb') as file:
-            pickle.dump(all_model_results, file)
-    else:
-        import pickle
-        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/attention_kernel_roofline', 'rb') as file:
-            all_model_results = pickle.load(file)
-
-=======
->>>>>>> b6b8c1972945cff31dad0b1a9ebc45939b2a3770
     # prepare data
 
     # average peak metrics for all results
@@ -327,18 +315,6 @@ def table_models(
 ) -> None:
     plt.style.use('ggplot')
 
-<<<<<<< HEAD
-    if all_model_results is not None:
-        import pickle
-        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau', 'wb') as file:
-            pickle.dump(all_model_results, file)
-    else:
-        import pickle
-        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau', 'rb') as file:
-            all_model_results = pickle.load(file)
-
-=======
->>>>>>> b6b8c1972945cff31dad0b1a9ebc45939b2a3770
     # prepare data
 
     # average peak metrics for all results
