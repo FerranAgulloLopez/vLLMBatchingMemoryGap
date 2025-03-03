@@ -1,17 +1,27 @@
 import os
 import re
 import glob
+import pickle
 import sqlite3
 import pandas as pd
 from typing import List, Tuple, Dict, Set, Any
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 import numpy as np
 import subprocess
 import shlex
+from copy import deepcopy
 
 # FOR RUNNING SCRIPT, EXPORT FIRST nsys-rep REPORT WITH "nsys export --separate-strings yes --type sqlite .nsys-rep"
 # MAYBE THE REPORT IS MISSING BECAUSE OF REPO SIZE CONSTRAINTS. IN THAT CASE, RERUN THE EXPS WITH THE PROVIDED CONFIG
+
+
+def str_to_bool(string: str):
+    return string.lower() in ['true', '1', 't', 'y', 'yes']
+
+CREATE_SQLITE_DATABASES = str_to_bool(os.getenv('CREATE_SQLITE_DATABASES', False))
+LOAD_PICKLE = str_to_bool(os.getenv('LOAD_PICKLE', False))
+PICKLE_ROOT_PATH = os.getenv('PICKLE_ROOT_PATH', None)
+assert PICKLE_ROOT_PATH is not None
 
 
 def create_sqlite_databases(path: str):
@@ -123,13 +133,6 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
     if found is not None:
         raise ValueError(f'Preemption was present')
 
-    # compute decode time
-    pattern = f'Decode elapsed time: [+-]?([0-9]+([.][0-9]*)?|[.][0-9]+) seconds'
-    found = re.search(pattern, log_out)
-    if found is None:
-        raise ValueError(f'Metric pattern not found on result log')
-    output['decode_time'] = float(found.group(1))
-
     # check if using flash attention as backend
     flash_attention: bool = True  # opt-2.7b model not compatible with flash backend -> Cannot use FlashAttention-2 backend for head size 80
     pattern = f'Using XFormers backend'
@@ -139,6 +142,9 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
 
     # find decode start and end
     _, _, decode_start, decode_end = nsight_extract_prefill_decode_start_end_times(nsight_sqlite_file)
+
+    # compute decode time
+    output['decode_time'] = decode_end - decode_start
 
     # extract kernel durations during decoding
     kernel_durations = nsight_extract_kernels_duration_on_window(nsight_sqlite_file, decode_start, decode_end)
@@ -230,15 +236,6 @@ def plot_batch_size_evolution(
         all_model_results: List[Dict[str, Any]],
         path: str
 ) -> None:
-    if all_model_results is not None:
-        import pickle
-        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_distinct_kernels', 'wb') as file:
-            pickle.dump(all_model_results, file)
-    else:
-        import pickle
-        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_distinct_kernels', 'rb') as file:
-            all_model_results = pickle.load(file)
-
     # group kernels
     grouping_labels = {
         'matrix_multiplication': 'Matrix multiplication',
@@ -312,48 +309,25 @@ def plot_batch_size_evolution(
             all_model_results[index]['kernel_durations_grouped'][new_label] += kernel_duration
         del all_model_results[index]['kernel_durations']
 
-    # include python code
+    # include cpu time
     for index, model_results in enumerate(all_model_results):
-        decode_time: float = model_results['decode_time'] * 1e+9  # transform to ns
+        decode_time: float = model_results['decode_time']
         all_kernel_time: float = 0
         for kernel_label, kernel_duration in model_results['kernel_durations_grouped'].items():
             all_kernel_time += float(kernel_duration)
         all_model_results[index]['kernel_durations_grouped']['CPU time'] = decode_time - all_kernel_time
 
-    # compute proportion
+    # compute proportion and find important kernels
+    minimum_proportion = 20
+    important_kernels = set()
+    filter_out = set()
     for index, model_results in enumerate(all_model_results):
-        decode_time: float = model_results['decode_time'] * 1e+9  # transform to ns
+        decode_time: float = model_results['decode_time']  # transform to ns
         for kernel_label, kernel_duration in model_results['kernel_durations_grouped'].items():
             kernel_duration: float = float(kernel_duration)
             kernel_proportion: float = kernel_duration / decode_time * 100
             all_model_results[index]['kernel_durations_grouped'][kernel_label] = kernel_proportion
 
-    # average by batch size
-    kernel_durations_average_batch_size = {}
-    for index, model_results in enumerate(all_model_results):
-        batch_size: int = model_results['batch_size']
-        if batch_size not in kernel_durations_average_batch_size:
-            kernel_durations_average_batch_size[batch_size] = {}
-        for kernel_label, kernel_proportion in model_results['kernel_durations_grouped'].items():
-            if kernel_label not in kernel_durations_average_batch_size[batch_size]:
-                kernel_durations_average_batch_size[batch_size][kernel_label] = {'sum': 0, 'count': 0}
-            kernel_durations_average_batch_size[batch_size][kernel_label]['sum'] += kernel_proportion
-            kernel_durations_average_batch_size[batch_size][kernel_label]['count'] += 1
-    kernel_durations_average_batch_size_new = {}
-    for batch_size, batch_size_kernels in kernel_durations_average_batch_size.items():
-        if batch_size not in kernel_durations_average_batch_size_new:
-            kernel_durations_average_batch_size_new[batch_size] = {}
-        for kernel_label, kernel_proportion in batch_size_kernels.items():
-            kernel_durations_average_batch_size_new[batch_size][kernel_label] = kernel_proportion['sum'] / kernel_proportion['count']
-    kernel_durations_average_batch_size = kernel_durations_average_batch_size_new
-    del kernel_durations_average_batch_size_new
-
-    # find important kernels
-    minimum_proportion = 20
-    important_kernels = set()
-    filter_out = set()
-    for batch_size_kernels in kernel_durations_average_batch_size.values():
-        for kernel_label, kernel_proportion in batch_size_kernels.items():
             if kernel_proportion > minimum_proportion:
                 important_kernels.add(kernel_label)
             else:
@@ -362,11 +336,33 @@ def plot_batch_size_evolution(
     print(f'Important kernels. Count: {len(important_kernels)}. List: {important_kernels}')
 
     # filter out not important kernels
-    for batch_size, batch_size_kernels in kernel_durations_average_batch_size.items():
+    for index, model_results in enumerate(all_model_results):
         for filter_out_kernel in filter_out:
-            if filter_out_kernel in batch_size_kernels:
-                del kernel_durations_average_batch_size[batch_size][filter_out_kernel]
+            if filter_out_kernel in model_results['kernel_durations_grouped']:
+                del model_results['kernel_durations_grouped'][filter_out_kernel]
 
+    # move important kernels outside
+    for index, model_results in enumerate(all_model_results):
+        for kernel_label, kernel_proportion in model_results['kernel_durations_grouped'].items():
+            model_results[kernel_label] = kernel_proportion
+        del model_results['kernel_durations_grouped']
+
+    # prepare lines
+    kernel_results = []
+    for important_kernel in important_kernels:
+        kernel_results.append(
+            (
+                important_kernel,
+                __prepare_lines(
+                    all_model_results,
+                    'batch_size',
+                    important_kernel,
+                    'model'
+                )
+            )
+        )
+
+    # plot
     params = {'mathtext.default': 'regular'}
     plt.rcParams.update({
         'font.family': 'serif',
@@ -383,33 +379,30 @@ def plot_batch_size_evolution(
         'grid.linewidth': 0.4,
         'figure.figsize': (7, 5)  # Consistent size for single plot
     })
-    # plot
     fig, ax = plt.subplots(layout='constrained', figsize=(6, 4))
     width = 0.15  # the width of the bars
-    multiplier = 0
-    x_line_labels = kernel_durations_average_batch_size.keys()
-    x_line_labels = sorted(x_line_labels)
-    x_line = np.arange(len(x_line_labels))
-    kernel_lines = {}
-    for batch_size in x_line_labels:
-        for kernel_name in important_kernels:
-            if kernel_name not in kernel_lines:
-                kernel_lines[kernel_name] = []
-            if kernel_name not in kernel_durations_average_batch_size[batch_size]:
-                kernel_lines[kernel_name].append(0)
-            else:
-                kernel_lines[kernel_name].append(kernel_durations_average_batch_size[batch_size][kernel_name])
-    for label, y_line in kernel_lines.items():
-        offset = width * multiplier
-        rects = ax.bar(x_line + offset, y_line, width, label=label)
-        # ax.bar_label(rects, padding=3)
-        multiplier += 1
+
+    bottom = {}
+    xaxis_labels = []
+    for kernel_label, kernel_lines in kernel_results:
+        multiplier = 0
+        for (model, x_line, y_line) in kernel_lines:
+            offset = width * multiplier
+            # x_line = np.asarray(x_line)
+            if model not in bottom:
+                bottom[model] = np.zeros(len(y_line))
+            y_line = np.asarray(y_line)
+            rects = ax.bar(np.arange(len(x_line)) + offset, y_line, width, label=f'{model} {kernel_label}', bottom=bottom[model])
+            multiplier += 1
+            bottom[model] += y_line
+            if len(x_line) > len(xaxis_labels):
+                xaxis_labels = x_line
     ax.set_ylabel('Time proportion (%)')
     ax.set_xlabel('Average batch size (reqs)')
-    ax.set_xticks(x_line + width, x_line_labels)
+    ax.set_xticks(np.arange(len(xaxis_labels)), xaxis_labels)
     handles, labels = ax.get_legend_handles_labels()
-    handles = [handles[1], handles[0], handles[2]]
-    labels = [labels[1], labels[0], labels[2]]
+    '''handles = [handles[1], handles[0], handles[2]]
+    labels = [labels[1], labels[0], labels[2]]'''
     ax.legend(handles, labels, loc='upper right', fontsize=10)
     output_path = os.path.join(path, 'decode_kernels_distinct_kernels.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
@@ -420,15 +413,6 @@ def extract_longer_matrix_multiplication(
         path: str
 ) -> None:
     plt.style.use('ggplot')
-
-    if all_model_results is not None:
-        import pickle
-        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_distinct_kernels', 'wb') as file:
-            pickle.dump(all_model_results, file)
-    else:
-        import pickle
-        with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/decode_kernels_distinct_kernels', 'rb') as file:
-            all_model_results = pickle.load(file)
 
     # sum matrix multiplication kernels durations
     matrix_multiplication_kernels_durations = {
@@ -493,28 +477,30 @@ def extract_longer_matrix_multiplication(
 
 
 def main():
-    '''for model in ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
-        create_sqlite_databases(model)'''
+    if CREATE_SQLITE_DATABASES:
+        for model in ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
+            create_sqlite_databases(model)
 
-    '''model_results: List[Dict[str, Any]] = []
-    for model in ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
-        model_results += extract_results(model, model)
+    model_results: List[Dict[str, Any]] = []
+    if LOAD_PICKLE:
+        with open(os.path.join(PICKLE_ROOT_PATH, 'decode_kernels_distinct_kernels'), 'rb') as file:
+            model_results = pickle.load(file)
+    else:
+        for model in ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']:
+            model_results += extract_results(model, model)
+        with open(os.path.join(PICKLE_ROOT_PATH, 'decode_kernels_distinct_kernels'), 'wb') as file:
+            pickle.dump(model_results, file)
 
     plot_batch_size_evolution(
-        model_results,
-        '.'
-    )'''
-
-    plot_batch_size_evolution(
-        None,
+        deepcopy(model_results),
         '.'
     )
 
-    '''# useful for a later on plot
+    # useful for a later on plot
     extract_longer_matrix_multiplication(
-        None,
+        model_results,
         '.'
-    )'''
+    )
 
 
 if __name__ == '__main__':
