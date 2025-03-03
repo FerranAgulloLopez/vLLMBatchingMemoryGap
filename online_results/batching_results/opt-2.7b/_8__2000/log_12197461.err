@@ -1,5 +1,0 @@
-load SINGULARITY/3.11.5 (PATH)
-/home/bsc/bsc098949/ibm1/extension/vLLMServingPlateau/vllm/connections.py:8: RuntimeWarning: Failed to read commit hash:
-No module named 'vllm._version'
-  from vllm.version import __version__ as VLLM_VERSION
-slurmstepd: error: *** JOB 12197461 ON as02r3b32 CANCELLED AT 2024-11-25T16:43:00 ***
