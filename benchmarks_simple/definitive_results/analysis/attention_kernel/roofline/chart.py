@@ -1,20 +1,26 @@
 import os
+import pickle
 import re
 import glob
-import sqlite3
-import pandas as pd
+from decimal import Decimal
 from typing import List, Tuple, Dict, Set, Any
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from matplotlib.gridspec import GridSpec
 import numpy as np
-# This following package comes from the NCU installation, add the corresponding path to the PYTHONPATH env variable, or check the official documentation
-# in our specific case PYTHONPATH=PYTHONPATH:/usr/local/NVIDIA-Nsight-Compute/extras/python/
-import ncu_report
 from copy import deepcopy
 
 
 # MAYBE THE NCU REPORT IS MISSING BECAUSE OF REPO SIZE CONSTRAINTS. IN THAT CASE, RERUN THE EXPS WITH THE PROVIDED CONFIG
+
+def str_to_bool(string: str):
+    return string.lower() in ['true', '1', 't', 'y', 'yes']
+
+LOAD_PICKLE = str_to_bool(os.getenv('LOAD_PICKLE', False))
+PICKLE_ROOT_PATH = os.getenv('PICKLE_ROOT_PATH', None)
+assert PICKLE_ROOT_PATH is not None
+if not LOAD_PICKLE:
+    # This following package comes from the NCU installation, add the corresponding path to the PYTHONPATH env variable, or check the official documentation
+    # in our specific case PYTHONPATH=PYTHONPATH:/usr/local/NVIDIA-Nsight-Compute/extras/python/
+    import ncu_report
 
 
 def extract_experiment_metric(path: str) -> Dict[str, Any]:
@@ -177,6 +183,7 @@ def plot_decode_timewise(
 ) -> None:
     plt.style.use('ggplot')
 
+<<<<<<< HEAD
     if all_model_results is not None:
         import pickle
         with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/attention_kernel_roofline', 'wb') as file:
@@ -186,6 +193,8 @@ def plot_decode_timewise(
         with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/attention_kernel_roofline', 'rb') as file:
             all_model_results = pickle.load(file)
 
+=======
+>>>>>>> b6b8c1972945cff31dad0b1a9ebc45939b2a3770
     # prepare data
 
     # average peak metrics for all results
@@ -318,6 +327,7 @@ def table_models(
 ) -> None:
     plt.style.use('ggplot')
 
+<<<<<<< HEAD
     if all_model_results is not None:
         import pickle
         with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau', 'wb') as file:
@@ -327,6 +337,8 @@ def table_models(
         with open('/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau', 'rb') as file:
             all_model_results = pickle.load(file)
 
+=======
+>>>>>>> b6b8c1972945cff31dad0b1a9ebc45939b2a3770
     # prepare data
 
     # average peak metrics for all results
@@ -377,27 +389,37 @@ def table_models(
     )
 
     # show
+    def print_metric_value(value: float):
+        return '%.2E' % Decimal(value)
+
     print('Common data')
-    print('peak_work_single_precision', peak_work_single_precision)
-    print('peak_work_double_precision', peak_work_double_precision)
-    print('peak_traffic', peak_traffic)
+    print('peak_work_single_precision', print_metric_value(peak_work_single_precision))
+    print('peak_work_double_precision', print_metric_value(peak_work_double_precision))
+    print('peak_traffic', print_metric_value(peak_traffic))
     print('Data by model')
     for index_model in range(len(achieved_traffic_right)):
         model_label = achieved_traffic_right[index_model][0]
         assert model_label == achieved_work_right[index_model][0]
         model_achieved_traffic = achieved_traffic_right[index_model][2][0]
         model_achieved_work = achieved_work_right[index_model][2][0]
-        print('model', model_label, 'model_achieved_traffic', model_achieved_traffic, 'model_achieved_work', model_achieved_work)
+        print('model', model_label, 'model_achieved_traffic', print_metric_value(model_achieved_traffic), 'model_achieved_work', print_metric_value(model_achieved_work))
 
 
 def main():
     model_results: List[Dict[str, Any]] = []
-    model_results += extract_results('flash/opt-1.3b', 'opt-1.3b', 'flash')
-    model_results += extract_results('xformers/opt-1.3b', 'opt-1.3b', 'xformers')
-    model_results += extract_results('xformers/opt-2.7b', 'opt-2.7b', 'xformers')
-    model_results += extract_results('xformers/llama-2-7b', 'llama-2-7b', 'xformers')
-    model_results += extract_results('xformers/llama-2-13b', 'llama-2-13b', 'xformers')
-    model_results += extract_results('matmul/opt-1.3b', 'opt-1.3b', 'matmul')
+    if LOAD_PICKLE:
+        with open(os.path.join(PICKLE_ROOT_PATH, 'attention_kernel_roofline'), 'rb') as file:
+            model_results = pickle.load(file)
+    else:
+        model_results += extract_results('flash/opt-1.3b', 'opt-1.3b', 'flash')
+        model_results += extract_results('xformers/opt-1.3b', 'opt-1.3b', 'xformers')
+        model_results += extract_results('xformers/opt-2.7b', 'opt-2.7b', 'xformers')
+        model_results += extract_results('xformers/llama-2-7b', 'llama-2-7b', 'xformers')
+        model_results += extract_results('xformers/llama-2-13b', 'llama-2-13b', 'xformers')
+        model_results += extract_results('matmul/opt-1.3b', 'opt-1.3b', 'matmul')
+
+        with open(os.path.join(PICKLE_ROOT_PATH, 'attention_kernel_roofline'), 'wb') as file:
+            pickle.dump(model_results, file)
 
     plot_decode_timewise(
         model_results,
@@ -408,17 +430,6 @@ def main():
         model_results,
         '.'
     )
-
-
-    '''plot_decode_timewise(
-        None,
-        '.'
-    )
-
-    table_models(
-        None,
-        '.'
-    )'''
 
 
 if __name__ == '__main__':
