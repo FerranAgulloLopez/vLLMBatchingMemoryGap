@@ -283,7 +283,9 @@ def plot_kv_cache(
             marker=marker,
             markersize=6,
             color=color,
-            label=model
+            label=model,
+            edgecolor='black', 
+            linewidth=1.5
         )
 
     # Axis labels and ticks

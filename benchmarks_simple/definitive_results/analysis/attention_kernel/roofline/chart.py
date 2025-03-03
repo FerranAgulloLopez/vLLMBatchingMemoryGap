@@ -181,10 +181,6 @@ def plot_decode_timewise(
         all_model_results: List[Dict[str, Any]],
         path: str
 ) -> None:
-    plt.style.use('ggplot')
-
-    # prepare data
-
     # average peak metrics for all results
     peak_work_single_precision: List[float] = []
     peak_work_double_precision: List[float] = []
@@ -232,81 +228,120 @@ def plot_decode_timewise(
     assert achieved_traffic_matmul[0] == 'matmul'
     assert achieved_traffic_xformers[0] == 'xformers'
 
-    # define figure
-    nrows = 1
-    ncols = 1
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, layout='constrained', figsize=(9, 6), sharey=True)
+    import matplotlib.pyplot as plt
+    import matplotlib.ticker as ticker
+    import os
 
-    # plot figure
-    for index_x in range(ncols):
-        # peak work single precision
-        x_line = np.arange(0, 100)
-        y_line = [peak_work_single_precision] * np.shape(x_line)[0]
-        axs.plot(
-            x_line,
-            y_line,
-            label='single precision roofline'
-        )
+    # Define figure parameters for a high-quality conference plot
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 15,  # Slightly increased for readability
+        'axes.titlesize': 16,
+        'axes.labelsize': 16,
+        'xtick.labelsize': 14,
+        'ytick.labelsize': 14,
+        'legend.fontsize': 13,
+        'lines.linewidth': 3.0,  # Thicker lines for clarity
+        'mathtext.default': 'regular',
+        'axes.grid': True,
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.5,  # More visible but subtle
+        'figure.figsize': (7.5, 5.5)  # Slightly adjusted for better aspect ratio
+    })
 
-        # peak work double precision
-        x_line = np.arange(0, 100)
-        y_line = [peak_work_double_precision] * np.shape(x_line)[0]
-        axs.plot(
-            x_line,
-            y_line,
-            label='double precision roofline'
-        )
+    # Define colors & markers for better contrast
+    colors = ['#009E73', '#D55E00', '#CC79A7', '#0072B2', '#E69F00']  # Added purple for differentiation
+    # colors = ['#CC79A7', '#D55E00','#009E73' , '#0072B2', '#E69F00']  # Added purple for differentiation
 
-        # peak traffic
-        x_line = np.arange(0.01, 100)
-        # y_line = np.log(np.asarray([x_line[index] * peak_traffic for index in range(np.shape(x_line)[0])]))
-        y_line = np.asarray([x_line[index] * peak_traffic for index in range(np.shape(x_line)[0])])
-        axs.plot(
-            x_line,
-            y_line,
-            label='memory bandwidth'
-        )
+    markers = ['o', 's', 'D', '^', '*']  # Unique markers for each method
 
-        # achieved work and traffic
-        x_line = [achieved_work_flash[2][index] / achieved_traffic_flash[2][index] for index in range(len(achieved_work_flash[2]))]
-        y_line = achieved_work_flash[2]
-        axs.plot(
-            x_line,
-            y_line,
-            marker='o',
-            label='achieved flash'
-        )
-        x_line = [achieved_work_matmul[2][index] / achieved_traffic_matmul[2][index] for index in range(len(achieved_work_matmul[2]))]
-        y_line = achieved_work_matmul[2]
-        axs.plot(
-            x_line,
-            y_line,
-            marker='o',
-            label='achieved matmul'
-        )
-        x_line = [achieved_work_xformers[2][index] / achieved_traffic_xformers[2][index] for index in range(len(achieved_work_xformers[2]))]
-        y_line = achieved_work_xformers[2]
-        axs.plot(
-            x_line,
-            y_line,
-            marker='o',
-            label='achieved xformers'
-        )
+    # Create figure
+    l = 1000
+    fig, axs = plt.subplots(figsize=(7.5, 5.5), constrained_layout=True)
 
-        # label stuff
-        axs.set_xscale('log')
-        axs.set_yscale('log')
-        # axs.set_xticks([0.1, 10, 100])
-        import matplotlib.ticker as ticker
-        axs.xaxis.set_major_locator(ticker.LogLocator(base=10.0, subs=[1.0], numticks=10))
-        axs.yaxis.set_major_locator(ticker.LogLocator(base=10.0, subs=[1.0], numticks=10))
-        axs.set_ylabel('Performance (Flop/s)')
-        axs.set_xlabel('Arithmetic Intensity (FLOP/byte)')
-        # axs.set_ylim(0, 0.2e13)
-        axs.legend(loc='upper right', fontsize=10)
+    # Peak work single precision (roofline)
+    x_line = np.arange(0, l)
+    y_line_compute = [peak_work_single_precision] * np.shape(x_line)[0]
+    axs.plot(x_line, y_line_compute, label='Single precision roofline', linewidth=4, color=colors[0])
 
+    # Find intersection point
+    intersection_x = peak_work_single_precision / peak_traffic  # Where y_compute = y_memory
+    intersection_y = peak_work_single_precision
+
+    # Peak memory bandwidth
+    x_line = np.arange(0.01, intersection_x)
+    y_line_memory = np.asarray([x * peak_traffic for x in x_line])
+    axs.plot(x_line, y_line_memory, label='Memory bandwidth', linewidth=4, color=colors[1])
+    axs.set_xlim(left=x_line[0])
+
+    # Add vertical line at intersection
+    axs.axvline(intersection_x, linestyle='--', color='gray', linewidth=2)
+
+    # Shading **only** the memory-bound region (left of intersection, below memory bandwidth)
+    x_fill = np.linspace(x_line[0], intersection_x, 100)
+    y_fill = np.asarray([x * peak_traffic for x in x_fill])
+    axs.fill_between(x_fill, y_fill, color='lightcoral', alpha=0.3)
+    axs.fill_betweenx(
+        np.linspace(0, intersection_y, 100),
+        intersection_x, l, color='lightgreen', alpha=0.3
+    )
+
+    # Achieved work and traffic for different methods
+    methods = {
+        'FlashAttention kernel': (achieved_work_flash, achieved_traffic_flash, colors[2], markers[0]),
+        'Matmul kernel': (achieved_work_matmul, achieved_traffic_matmul, colors[3], markers[1]),
+        'Xformers kernel': (achieved_work_xformers, achieved_traffic_xformers, colors[4], markers[2])
+    }
+
+    for label, (work, traffic, color, marker) in methods.items():
+        print(work[1])
+        x_line = [work[2][0] / traffic[2][0], work[2][-1] / traffic[2][-1]]
+        y_line = [work[2][0], work[2][-1]]
+        
+        axs.plot(
+        x_line, y_line, label=label, color=color,
+        marker=marker, markersize=10, markeredgewidth=1.5, markeredgecolor='black'
+        )
+        list_batch = [1,2,4,8,16,32,64,96,128,192,256,384,512]
+        if label == "FlashAttention kernel":
+            axs.text(x_line[0] * 1.2, y_line[0] * 1.1, '1', color='black', fontsize=12)
+            axs.text(x_line[1] * 1.25, y_line[1] * 0.9, 'M', color='black', fontsize=12)
+        elif label == "Matmul kernel":
+            axs.text(x_line[0] * 1.25, y_line[0] * 0.8, '1', color='black', fontsize=12)
+            axs.text(x_line[1] * 1, y_line[1] * 0.6, 'M', color='black', fontsize=12)
+        elif label == "Xformers kernel":
+            axs.text(x_line[0] * 0.7, y_line[0] * 1.1, '1', color='black', fontsize=12)
+            axs.text(x_line[1] * 0.6, y_line[1] * 1.1, f'{list_batch[len(work[2])]}', color='black', fontsize=12)
+
+    # Set log scales with improved tick placement
+    axs.set_xscale('log')
+    axs.set_yscale('log')
+    axs.xaxis.set_major_locator(ticker.LogLocator(base=10.0, subs=[1.0], numticks=10))
+    axs.yaxis.set_major_locator(ticker.LogLocator(base=10.0, subs=[1.0], numticks=10))
+
+    y_min = min(y_line_memory)  # Minimum y value from memory bandwidth line
+    y_max = peak_work_single_precision * 50  # Set max y to be ~4x the horizontal line for centering
+
+    axs.set_ylim(0, y_max)
+
+    # Label axes
+    axs.set_ylabel('Performance (Flop/s)', fontsize=16)
+    axs.set_xlabel('Arithmetic Intensity (FLOP/byte)', fontsize=16)
+
+    y_text_position = y_min * 1.2  # Slightly above the lowest y value
+
+    # Updated annotations, now aligned on top of the x-axis line
+    axs.text(0.07, y_text_position, 'Memory-bound region', color='black', fontsize=13, verticalalignment='bottom')
+
+
+    # Adjust legend to include only the necessary information
+    axs.legend(loc='upper left', fontsize=12, frameon=True, fancybox=True, edgecolor='black')
+
+    # Save as high-resolution vector graphic
     output_path = os.path.join(path, 'attention_kernel_roofline.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
+
+    plt.show()
 
 
 def table_models(
