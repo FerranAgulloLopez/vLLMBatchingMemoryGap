@@ -257,35 +257,29 @@ def cache_values(
     del all_model_results
 
     # extract important metrics
-    l1_hit_rate_1 = []
-    l1_hit_rate_max = []
-    l2_hit_rate_1 = []
-    l2_hit_rate_max = []
+    l1_hit_rate_1 = {}
+    l1_hit_rate_max = {}
+    l2_hit_rate_1 = {}
+    l2_hit_rate_max = {}
     for results in right_all_model_results:
+        model = results['model']
         l1_hit_rate = results['ncu_metrics']['l1_hit_rate']
         l2_hit_rate = results['ncu_metrics']['l2_hit_rate']
         batch_size = results['batch_size']
         if batch_size == 1:
-            l1_hit_rate_1.append(l1_hit_rate)
-            l2_hit_rate_1.append(l2_hit_rate)
+            l1_hit_rate_1[model] = l1_hit_rate
+            l2_hit_rate_1[model] = l2_hit_rate
         else:
-            l1_hit_rate_max.append(l1_hit_rate)
-            l2_hit_rate_max.append(l2_hit_rate)
-
-    # average metric values
-    l1_hit_rate_1 = float(np.mean(np.asarray(l1_hit_rate_1)))
-    l1_hit_rate_max = float(np.mean(np.asarray(l1_hit_rate_max)))
-    l2_hit_rate_1 = float(np.mean(np.asarray(l2_hit_rate_1)))
-    l2_hit_rate_max = float(np.mean(np.asarray(l2_hit_rate_max)))
+            l1_hit_rate_max[model] = l1_hit_rate
+            l2_hit_rate_max[model] = l2_hit_rate
 
     # show
     def print_metric_value(value: float):
-        return value
+        return '{:.2f}'.format(value)
 
-    print('L1 hit rate batch size = 1:', print_metric_value(l1_hit_rate_1), '%')
-    print('L1 hit rate batch size = max():', print_metric_value(l1_hit_rate_max), '%')
-    print('L2 hit rate batch size = 1:', print_metric_value(l2_hit_rate_1), '%')
-    print('L2 hit rate batch size = max():', print_metric_value(l2_hit_rate_max), '%')
+    for model in l1_hit_rate_1.keys():
+        print('Model', model, 'batch size', 1, 'l1 hit rate', print_metric_value(l1_hit_rate_1[model]), 'l2 hit rate', print_metric_value(l2_hit_rate_1[model]))
+        print('Model', model, 'batch size', 'max', 'l1 hit rate', print_metric_value(l1_hit_rate_max[model]), 'l2 hit rate', print_metric_value(l2_hit_rate_max[model]))
 
 
 def main():

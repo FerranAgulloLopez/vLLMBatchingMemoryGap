@@ -337,27 +337,46 @@ def table_models(
             model_max_batch_size[model] = 0
         model_max_batch_size[model] = max(batch_size, model_max_batch_size[model])
 
-    # filter only maximum batch size for every model and only xformers kernel
-    right_all_model_results = []
+    # filter only maximum and 1 batch sizes for every model and only xformers kernel
+    max_all_model_results = []
+    single_all_model_results = []
     for results in all_model_results:
         model = results['model']
         batch_size = results['batch_size']
         kernel = results['kernel']
-        if batch_size == model_max_batch_size[model] and kernel == 'xformers':
-            right_all_model_results.append(deepcopy(results))
+        if kernel == 'xformers':
+            if batch_size == model_max_batch_size[model]:
+                max_all_model_results.append(deepcopy(results))
+            elif batch_size == 1:
+                single_all_model_results.append(deepcopy(results))
 
     # extract individual metrics
-    for results in right_all_model_results:
+    for results in max_all_model_results:
         results['achieved_work'] = results['ncu_metrics']['achieved_work']
         results['achieved_traffic'] = results['ncu_metrics']['achieved_traffic']
-    achieved_work_right = __prepare_lines(
-        right_all_model_results,
+    max_achieved_work_right = __prepare_lines(
+        max_all_model_results,
         'batch_size',
         'achieved_work',
         'model'
     )
-    achieved_traffic_right = __prepare_lines(
-        right_all_model_results,
+    max_achieved_traffic_right = __prepare_lines(
+        max_all_model_results,
+        'batch_size',
+        'achieved_traffic',
+        'model'
+    )
+    for results in single_all_model_results:
+        results['achieved_work'] = results['ncu_metrics']['achieved_work']
+        results['achieved_traffic'] = results['ncu_metrics']['achieved_traffic']
+    single_achieved_work_right = __prepare_lines(
+        single_all_model_results,
+        'batch_size',
+        'achieved_work',
+        'model'
+    )
+    single_achieved_traffic_right = __prepare_lines(
+        single_all_model_results,
         'batch_size',
         'achieved_traffic',
         'model'
@@ -372,12 +391,19 @@ def table_models(
     print('peak_work_double_precision', print_metric_value(peak_work_double_precision))
     print('peak_traffic', print_metric_value(peak_traffic))
     print('Data by model')
-    for index_model in range(len(achieved_traffic_right)):
-        model_label = achieved_traffic_right[index_model][0]
-        assert model_label == achieved_work_right[index_model][0]
-        model_achieved_traffic = achieved_traffic_right[index_model][2][0]
-        model_achieved_work = achieved_work_right[index_model][2][0]
-        print('model', model_label, 'model_achieved_traffic', print_metric_value(model_achieved_traffic), 'model_achieved_work', print_metric_value(model_achieved_work))
+    for index_model in range(len(max_achieved_traffic_right)):
+        model_label = max_achieved_traffic_right[index_model][0]
+        assert model_label == max_achieved_work_right[index_model][0]
+        assert model_label == single_achieved_work_right[index_model][0]
+        assert model_label == single_achieved_traffic_right[index_model][0]
+        max_batch_size = max_achieved_traffic_right[index_model][1]
+        single_batch_size = single_achieved_traffic_right[index_model][1]
+        single_model_achieved_traffic = single_achieved_traffic_right[index_model][2][0]
+        single_model_achieved_work = single_achieved_work_right[index_model][2][0]
+        max_model_achieved_traffic = max_achieved_traffic_right[index_model][2][0]
+        max_model_achieved_work = max_achieved_work_right[index_model][2][0]
+        print('model', model_label, 'batch size', single_batch_size, 'model_achieved_traffic', print_metric_value(single_model_achieved_traffic), 'model_achieved_work', print_metric_value(single_model_achieved_work))
+        print('model', model_label, 'batch size', max_batch_size, 'model_achieved_traffic', print_metric_value(max_model_achieved_traffic), 'model_achieved_work', print_metric_value(max_model_achieved_work))
 
 
 def main():
