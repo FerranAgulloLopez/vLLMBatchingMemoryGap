@@ -19,7 +19,7 @@ def extract_experiment_metric(path: str) -> Dict[str, float]:
     
     output['throughput'] = float(metrics['request_throughput'])
     
-    data = pd.read_csv(os.path.join(path, 'metrics_engine.csv'))
+    data = pd.read_csv(os.path.join(path, 'metrics_engine_server_0.csv'))
     time = data['time [s]'].to_numpy()
     num_running = data['num_requests_running'].to_numpy()
     duration = float(metrics['duration'])
@@ -97,7 +97,7 @@ def plot_results(results: List[Dict[str, float]], output_path: str):
 
 def main():
     model = "opt-1.3b"
-    results_mean = extract_results(f'../output_length/_390/{model}')
+    results_mean = extract_results(f'/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/benchmarks/definitive_results/background/{model}')
     plot_results(results_mean, f'./plots_{model}.pdf')
 
 if __name__ == '__main__':
