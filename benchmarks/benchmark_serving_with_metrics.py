@@ -453,7 +453,6 @@ class Server:
 
 async def benchmark(
     backend: str,
-    api_url_test: str,
     model_id: str,
     tokenizer: PreTrainedTokenizerBase,
     input_requests: List[Tuple[str, int, int]],
@@ -471,31 +470,33 @@ async def benchmark(
     else:
         raise ValueError(f"Unknown backend: {backend}")
 
-    print("Starting initial single prompt test run...")
-    test_prompt, test_prompt_len, test_output_len, test_mm_content = (
-        input_requests[0])
-    if backend != "openai-chat" and test_mm_content is not None:
-        # multi-modal benchmark is only available on OpenAI Chat backend.
-        raise ValueError(
-            "Multi-modal content is only supported on 'openai-chat' backend.")
-    test_input = RequestFuncInput(
-        model=model_id,
-        prompt=test_prompt,
-        api_url=api_url_test,
-        prompt_len=test_prompt_len,
-        output_len=test_output_len,
-        logprobs=logprobs,
-        best_of=best_of,
-        multi_modal_content=test_mm_content,
-        ignore_eos=ignore_eos,
-    )
-    test_output = await request_func(request_func_input=test_input)
-    if not test_output.success:
-        raise ValueError(
-            "Initial test run failed - Please make sure benchmark arguments "
-            f"are correctly specified. Error: {test_output.error}")
-    else:
-        print("Initial test run completed. Starting main benchmark run...")
+    # do initial and warm up test
+    unique_api_urls = set(input_requests_api_urls)
+    for api_url in unique_api_urls:
+        print("Starting initial single prompt test run for url", api_url)
+        test_prompt, test_prompt_len, test_output_len, test_mm_content = (input_requests[0])
+        if backend != "openai-chat" and test_mm_content is not None:
+            # multi-modal benchmark is only available on OpenAI Chat backend.
+            raise ValueError(
+                "Multi-modal content is only supported on 'openai-chat' backend.")
+        test_input = RequestFuncInput(
+            model=model_id,
+            prompt=test_prompt,
+            api_url=api_url,
+            prompt_len=test_prompt_len,
+            output_len=test_output_len,
+            logprobs=logprobs,
+            best_of=best_of,
+            multi_modal_content=test_mm_content,
+            ignore_eos=ignore_eos,
+        )
+        test_output = await request_func(request_func_input=test_input)
+        if not test_output.success:
+            raise ValueError(
+                "Initial test run failed - Please make sure benchmark arguments "
+                f"are correctly specified. Error: {test_output.error}")
+        else:
+            print("Initial test run completed. Starting main benchmark run...")
 
     print(f"Traffic request rate: {request_rate}")
 
@@ -753,7 +754,6 @@ def main(args: argparse.Namespace):
         benchmark_result = asyncio.run(
             benchmark(
                 backend=backend,
-                api_url_test=get_api_url(args.host, args.port, args.endpoint, 0),  # one example from prompt test
                 model_id=model_id,
                 tokenizer=tokenizer,
                 input_requests=input_requests,
