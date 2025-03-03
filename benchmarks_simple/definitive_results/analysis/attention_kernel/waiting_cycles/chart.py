@@ -2,13 +2,9 @@ import os
 import re
 import glob
 import pickle
-from decimal import Decimal
-from typing import List, Tuple, Dict, Set, Any
+from typing import List, Dict, Set, Any
 import matplotlib.pyplot as plt
 import numpy as np
-# This following package comes from the NCU installation, add the corresponding path to the PYTHONPATH env variable, or check the official documentation
-# in our specific case PYTHONPATH=PYTHONPATH:/usr/local/NVIDIA-Nsight-Compute/extras/python/
-import ncu_report
 from copy import deepcopy
 
 
@@ -20,6 +16,10 @@ def str_to_bool(string: str):
 LOAD_PICKLE = str_to_bool(os.getenv('LOAD_PICKLE', False))
 PICKLE_ROOT_PATH = os.getenv('PICKLE_ROOT_PATH', None)
 assert PICKLE_ROOT_PATH is not None
+if not LOAD_PICKLE:
+    # This following package comes from the NCU installation, add the corresponding path to the PYTHONPATH env variable, or check the official documentation
+    # in our specific case PYTHONPATH=PYTHONPATH:/usr/local/NVIDIA-Nsight-Compute/extras/python/
+    import ncu_report
 
 
 def extract_experiment_metric(path: str) -> Dict[str, Any]:
@@ -53,7 +53,9 @@ def extract_experiment_metric(path: str) -> Dict[str, Any]:
     # extract NCU metrics for all profiles
     output['ncu_metrics'] = {
         'total_cycles': [],
-        'waiting_cycles': []
+        'waiting_cycles': [],
+        'l1_hit_rate': [],
+        'l2_hit_rate': []
     }
     for index in range(ncu_metrics.num_actions()):
         ncu_profile_metrics = ncu_metrics.action_by_idx(index)
@@ -63,6 +65,48 @@ def extract_experiment_metric(path: str) -> Dict[str, Any]:
 
         # extract average cycles waiting for L1TEX data
         output['ncu_metrics']['waiting_cycles'].append(ncu_profile_metrics.metric_by_name('smsp__average_warps_issue_stalled_long_scoreboard_per_issue_active.ratio').as_double())
+
+        # extract l1 hit rate
+        output['ncu_metrics']['l1_hit_rate'].append(
+            100 *
+            ncu_profile_metrics.metric_by_name('lts__t_sectors_lookup_hit.sum').as_double() /
+            (
+                ncu_profile_metrics.metric_by_name('lts__t_sectors_lookup_hit.sum').as_double() +
+                ncu_profile_metrics.metric_by_name('lts__t_sectors_lookup_miss.sum').as_double()
+            )
+
+        )
+
+        # extract l2 hit rate
+        hits = \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_local_op_ld_lookup_hit.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_hit.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_tex_mem_surface_op_ld_lookup_hit.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_tex_mem_texture_lookup_hit.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_global_op_st_lookup_hit.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_local_op_st_lookup_hit.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_tex_mem_surface_op_st_lookup_hit.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_global_op_red_lookup_hit.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_tex_mem_surface_op_red_lookup_hit.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_global_op_atom_lookup_hit.sum').as_double()
+
+        misses = \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_local_op_ld_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_dshared_op_ld_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_tex_mem_surface_op_ld_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_tex_mem_texture_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_global_op_st_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_local_op_st_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_dshared_op_st_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_tex_mem_surface_op_st_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_global_op_red_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_dshared_op_redas_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_tex_mem_surface_op_red_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_lsu_mem_global_op_atom_lookup_miss.sum').as_double() + \
+            ncu_profile_metrics.metric_by_name('l1tex__t_sectors_pipe_tex_mem_surface_op_atom_lookup_miss.sum').as_double()
+
+        output['ncu_metrics']['l2_hit_rate'].append(hits / (hits + misses) * 100)
 
     # average NCU metrics for all profiles
     for metric_name, metric_values in output['ncu_metrics'].items():
@@ -185,6 +229,65 @@ def plot_decode_cycles(
     plt.savefig(os.path.join(path, f'attention_kernel_waiting_cycles'), bbox_inches='tight')
 
 
+def cache_values(
+        all_model_results: List[Dict[str, Any]],
+        path: str
+) -> None:
+    plt.style.use('ggplot')
+
+    # prepare data
+
+    # get maximum batch size for every model
+    model_max_batch_size = {}
+    for results in all_model_results:
+        model = results['model']
+        batch_size = results['batch_size']
+        if model not in model_max_batch_size:
+            model_max_batch_size[model] = 0
+        model_max_batch_size[model] = max(batch_size, model_max_batch_size[model])
+
+    # filter only maximum batch size and 1 for every model and only xformers kernel
+    right_all_model_results = []
+    for results in all_model_results:
+        model = results['model']
+        batch_size = results['batch_size']
+        kernel = results['kernel']
+        if (batch_size == model_max_batch_size[model] or batch_size == 1) and kernel == 'xformers':
+            right_all_model_results.append(deepcopy(results))
+    del all_model_results
+
+    # extract important metrics
+    l1_hit_rate_1 = []
+    l1_hit_rate_max = []
+    l2_hit_rate_1 = []
+    l2_hit_rate_max = []
+    for results in right_all_model_results:
+        l1_hit_rate = results['ncu_metrics']['l1_hit_rate']
+        l2_hit_rate = results['ncu_metrics']['l2_hit_rate']
+        batch_size = results['batch_size']
+        if batch_size == 1:
+            l1_hit_rate_1.append(l1_hit_rate)
+            l2_hit_rate_1.append(l2_hit_rate)
+        else:
+            l1_hit_rate_max.append(l1_hit_rate)
+            l2_hit_rate_max.append(l2_hit_rate)
+
+    # average metric values
+    l1_hit_rate_1 = float(np.mean(np.asarray(l1_hit_rate_1)))
+    l1_hit_rate_max = float(np.mean(np.asarray(l1_hit_rate_max)))
+    l2_hit_rate_1 = float(np.mean(np.asarray(l2_hit_rate_1)))
+    l2_hit_rate_max = float(np.mean(np.asarray(l2_hit_rate_max)))
+
+    # show
+    def print_metric_value(value: float):
+        return value
+
+    print('L1 hit rate batch size = 1:', print_metric_value(l1_hit_rate_1), '%')
+    print('L1 hit rate batch size = max():', print_metric_value(l1_hit_rate_max), '%')
+    print('L2 hit rate batch size = 1:', print_metric_value(l2_hit_rate_1), '%')
+    print('L2 hit rate batch size = max():', print_metric_value(l2_hit_rate_max), '%')
+
+
 def main():
     model_results: List[Dict[str, Any]] = []
     if LOAD_PICKLE:
@@ -203,6 +306,11 @@ def main():
             pickle.dump(model_results, file)
 
     plot_decode_cycles(
+        model_results,
+        '.'
+    )
+
+    cache_values(
         model_results,
         '.'
     )

@@ -6,9 +6,6 @@ from decimal import Decimal
 from typing import List, Tuple, Dict, Set, Any
 import matplotlib.pyplot as plt
 import numpy as np
-# This following package comes from the NCU installation, add the corresponding path to the PYTHONPATH env variable, or check the official documentation
-# in our specific case PYTHONPATH=PYTHONPATH:/usr/local/NVIDIA-Nsight-Compute/extras/python/
-import ncu_report
 from copy import deepcopy
 
 
@@ -20,6 +17,10 @@ def str_to_bool(string: str):
 LOAD_PICKLE = str_to_bool(os.getenv('LOAD_PICKLE', False))
 PICKLE_ROOT_PATH = os.getenv('PICKLE_ROOT_PATH', None)
 assert PICKLE_ROOT_PATH is not None
+if not LOAD_PICKLE:
+    # This following package comes from the NCU installation, add the corresponding path to the PYTHONPATH env variable, or check the official documentation
+    # in our specific case PYTHONPATH=PYTHONPATH:/usr/local/NVIDIA-Nsight-Compute/extras/python/
+    import ncu_report
 
 
 def extract_experiment_metric(path: str) -> Dict[str, Any]:
