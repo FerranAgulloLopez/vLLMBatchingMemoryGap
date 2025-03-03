@@ -294,7 +294,7 @@ def plot_kv_cache(
     ax.set_xlim(left=0)
     ax.set_ylim(bottom=0)
     ax.grid(True, linestyle='--', linewidth=0.4, alpha=0.5)
-    ax.legend(loc='upper right', frameon=False)
+    ax.legend(loc='upper right', frameon=False, bbox_to_anchor=(1, 0.95))
 
     # Save as high-resolution PDF
     output_path = os.path.join(path, 'background_kv_cache_plot.pdf')
