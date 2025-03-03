@@ -1,0 +1,203 @@
+Run profile with:
+  engine_args = {'model': '/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b', 'served_model_name': None, 'tokenizer': '/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b', 'skip_tokenizer_init': False, 'tokenizer_mode': 'auto', 'trust_remote_code': False, 'download_dir': None, 'load_format': 'auto', 'config_format': <ConfigFormat.AUTO: 'auto'>, 'dtype': 'auto', 'kv_cache_dtype': 'auto', 'quantization_param_path': None, 'seed': 0, 'max_model_len': 2048, 'worker_use_ray': False, 'distributed_executor_backend': None, 'pipeline_parallel_size': 1, 'tensor_parallel_size': 1, 'max_parallel_loading_workers': None, 'block_size': 16, 'enable_prefix_caching': False, 'disable_sliding_window': False, 'use_v2_block_manager': False, 'swap_space': 4, 'cpu_offload_gb': 0, 'gpu_memory_utilization': 0.9, 'max_num_batched_tokens': 4096, 'max_num_seqs': 1024, 'max_logprobs': 20, 'disable_log_stats': True, 'revision': None, 'code_revision': None, 'rope_scaling': None, 'rope_theta': None, 'tokenizer_revision': None, 'quantization': None, 'enforce_eager': True, 'max_context_len_to_capture': None, 'max_seq_len_to_capture': 8192, 'disable_custom_all_reduce': False, 'tokenizer_pool_size': 0, 'tokenizer_pool_type': 'ray', 'tokenizer_pool_extra_config': None, 'limit_mm_per_prompt': None, 'enable_lora': False, 'max_loras': 1, 'max_lora_rank': 16, 'enable_prompt_adapter': False, 'max_prompt_adapters': 1, 'max_prompt_adapter_token': 0, 'fully_sharded_loras': False, 'lora_extra_vocab_size': 256, 'long_lora_scaling_factors': None, 'lora_dtype': 'auto', 'max_cpu_loras': None, 'device': 'auto', 'num_scheduler_steps': 1, 'multi_step_stream_outputs': True, 'ray_workers_use_nsight': False, 'num_gpu_blocks_override': None, 'num_lookahead_slots': 0, 'model_loader_extra_config': None, 'ignore_patterns': [], 'preemption_mode': None, 'scheduler_delay_factor': 0.0, 'enable_chunked_prefill': None, 'guided_decoding_backend': 'outlines', 'speculative_model': None, 'speculative_model_quantization': None, 'speculative_draft_tensor_parallel_size': None, 'num_speculative_tokens': None, 'speculative_disable_mqa_scorer': False, 'speculative_max_model_len': None, 'speculative_disable_by_batch_size': None, 'ngram_prompt_lookup_max': None, 'ngram_prompt_lookup_min': None, 'spec_decoding_acceptance_method': 'rejection_sampler', 'typical_acceptance_sampler_posterior_threshold': None, 'typical_acceptance_sampler_posterior_alpha': None, 'qlora_adapter_name_or_path': None, 'disable_logprobs_during_spec_decoding': None, 'otlp_traces_endpoint': None, 'collect_detailed_traces': None, 'disable_async_output_proc': False, 'override_neuron_config': None, 'mm_processor_kwargs': None, 'scheduling_policy': 'fcfs', 'override_generation_config': []}
+  prompt_len = 400
+  output_len = 100
+  batch_size = 1
+  result_dir = benchmarks_simple/definitive_results/analysis/attention_kernel/sequence_length/flash/increased_prompt_length/opt-1.3b/_400_100_1
+  save_chrome_traces_folder = None
+INFO 03-03 14:26:03 config.py:1673] Downcasting torch.float32 to torch.float16.
+==LOG== Target process 903336 terminated before first instrumented API call.
+==LOG== Target process 903337 terminated before first instrumented API call.
+==LOG== Target process 903338 terminated before first instrumented API call.
+WARNING 03-03 14:26:06 arg_utils.py:1029] [DEPRECATED] Block manager v1 has been removed, and setting --use-v2-block-manager to True or False has no effect on vLLM behavior. Please remove --use-v2-block-manager in your engine argument. If your use case is not supported by SelfAttnBlockSpaceManager (i.e. block manager v2), please file an issue with detailed information.
+WARNING 03-03 14:26:06 config.py:404] To see benefits of async output processing, enable CUDA graph. Since, enforce-eager is enabled, async output processor cannot be used
+INFO 03-03 14:26:06 llm_engine.py:237] Initializing an LLM engine (v0.1.dev3083+ge8bd0d9.d20250207) with config: model='/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b', speculative_config=None, tokenizer='/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, override_neuron_config=None, rope_scaling=None, rope_theta=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.float16, max_seq_len=2048, download_dir=None, load_format=LoadFormat.AUTO, tensor_parallel_size=1, pipeline_parallel_size=1, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, kv_cache_dtype=auto, quantization_param_path=None, device_config=cuda, decoding_config=DecodingConfig(guided_decoding_backend='outlines'), observability_config=ObservabilityConfig(otlp_traces_endpoint=None, collect_model_forward_time=False, collect_model_execute_time=False), seed=0, served_model_name=/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b, num_scheduler_steps=1, chunked_prefill_enabled=False multi_step_stream_outputs=True, enable_prefix_caching=False, use_async_output_proc=False, use_cached_outputs=False, mm_processor_kwargs=None)
+==LOG== Target process 903339 terminated before first instrumented API call.
+==LOG== Target process 903340 terminated before first instrumented API call.
+==PROF== Connected to process 903291 (/usr/bin/python3.12)
+==LOG== Target process 903344 terminated before first instrumented API call.
+==LOG== Target process 903412 terminated before first instrumented API call.
+==LOG== Target process 903413 terminated before first instrumented API call.
+==LOG== Target process 903414 terminated before first instrumented API call.
+==LOG== Target process 903415 terminated before first instrumented API call.
+==LOG== Target process 903416 terminated before first instrumented API call.
+INFO 03-03 14:26:11 model_runner.py:1056] Starting to load model /gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b...
+INFO 03-03 14:26:12 model_runner.py:1067] Loading model weights took 2.4509 GB
+INFO 03-03 14:26:13 worker.py:262] Memory profiling results: total_gpu_memory=63.43GiB initial_memory_usage=3.16GiB peak_torch_memory=4.32GiB non_torch_memory=0.10GiB kv_cache_size=52.67GiB gpu_memory_utilization=0.90
+INFO 03-03 14:26:13 gpu_executor.py:122] # GPU blocks: 17977, # CPU blocks: 1365
+INFO 03-03 14:26:13 gpu_executor.py:126] Maximum concurrency for 2048 tokens per request: 140.45x
+==LOG== Target process 903467 terminated before first instrumented API call.
+==LOG== Target process 903468 terminated before first instrumented API call.
+==LOG== Target process 903469 terminated before first instrumented API call.
+==LOG== Target process 903470 terminated before first instrumented API call.
+==WARNING== Unable to access the following 6 metrics: ctc__rx_bytes_data_user.sum, ctc__rx_bytes_data_user.sum.pct_of_peak_sustained_elapsed, ctc__rx_bytes_data_user.sum.per_second, ctc__tx_bytes_data_user.sum, ctc__tx_bytes_data_user.sum.pct_of_peak_sustained_elapsed, ctc__tx_bytes_data_user.sum.per_second.
+
+
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%
+==WARNING== Backing up device memory in system memory. Kernel replay might be slow. Consider using "--replay-mode application" to avoid memory save-and-restore.
+....50%....100% - 39 passes
+==LOG== Target process 903466 terminated before first instrumented API call.
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==LOG== Target process 903471 terminated before first instrumented API call.
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==LOG== Target process 903472 terminated before first instrumented API call.
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==LOG== Target process 903473 terminated before first instrumented API call.
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+==PROF== Profiling "flash_fwd_splitkv_kernel": 0%....50%....100% - 39 passes
+llm.llm_engine.model_config.max_model_len:  2048
+Warm up run ...
+Profile run ...
+Initialization elapsed time: 12.680749535560608 seconds
+
+PREFILL PHASES
+PREFILL - 0 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 0. RUNNING: 0. WAITING: 1
+PREFILL - 1 -> PREVIOUSLY RUN PREFILLS: 1. PREVIOUSLY RUN DECODES: 0. RUNNING: 1. WAITING: 0
+Prefill elapsed time: 0.051733240485191345 seconds
+
+DECODE PHASES
+DECODE - 0 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 1 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 2 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 3 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 4 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 5 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 6 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 7 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 8 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 9 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 10 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 11 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 12 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 13 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 14 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 15 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 16 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 17 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 18 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 19 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 20 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 21 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 22 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 23 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 24 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 25 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 26 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 27 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 28 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 29 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 30 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 31 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 32 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 33 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 34 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 35 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 36 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 37 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 38 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 39 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 40 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 41 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 42 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 43 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 44 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 45 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 46 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 47 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 48 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 49 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 50 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 51 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 52 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 53 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 54 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 55 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 56 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 57 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 58 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 59 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 60 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 61 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 62 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 63 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 64 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 65 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 66 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 67 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 68 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 69 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 70 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 71 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 72 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 73 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 74 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 75 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 76 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 77 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 78 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 79 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 80 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 81 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 82 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 83 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 84 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 85 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 86 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 87 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 88 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 89 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 90 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 91 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 92 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 93 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 94 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 95 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 96 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 97 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 1. RUNNING: 1. WAITING: 0
+DECODE - 98 -> PREVIOUSLY RUN PREFILLS: 0. PREVIOUSLY RUN DECODES: 0. RUNNING: 0. WAITING: 0
+Decode elapsed time: 1159.2630442753434 seconds
+Total elapsed time: 1171.9970084279776 seconds
+==PROF== Disconnected from process 903291
+==PROF== Report: /home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/benchmarks_simple/definitive_results/analysis/attention_kernel/sequence_length/flash/increased_prompt_length/opt-1.3b/_400_100_1/ncu_profile.ncu-rep
