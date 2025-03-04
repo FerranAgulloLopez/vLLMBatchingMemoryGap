@@ -464,7 +464,11 @@ async def benchmark(
     selected_percentile_metrics: List[str],
     selected_percentiles: List[str],
     ignore_eos: bool,
+    include_nvtx_regions: bool
 ):
+    if include_nvtx_regions:
+        import torch
+
     if backend in ASYNC_REQUEST_FUNCS:
         request_func = ASYNC_REQUEST_FUNCS[backend]
     else:
@@ -503,6 +507,8 @@ async def benchmark(
     pbar = None if disable_tqdm else tqdm(total=len(input_requests))
 
     benchmark_start_time = time.perf_counter()
+    if include_nvtx_regions:
+        torch.cuda.nvtx.mark('BenchmarkStart')
     tasks: List[asyncio.Task] = []
     async for request, api_url in get_request(input_requests, input_requests_api_urls, request_rate):
         prompt, prompt_len, output_len, mm_content = request
@@ -524,6 +530,8 @@ async def benchmark(
     if pbar is not None:
         pbar.close()
 
+    if include_nvtx_regions:
+        torch.cuda.nvtx.mark('BenchmarkEnd')
     benchmark_duration = time.perf_counter() - benchmark_start_time
 
     metrics, actual_output_lens = calculate_metrics(
@@ -767,6 +775,7 @@ def main(args: argparse.Namespace):
                     float(p) for p in args.metric_percentiles.split(",")
                 ],
                 ignore_eos=args.ignore_eos,
+                include_nvtx_regions=args.include_nvtx_regions,
             ))
 
         # Save config and results to json
@@ -1080,6 +1089,12 @@ if __name__ == "__main__":
         default=None,
         help="Output length for each request. Overrides the output lengths "
         "from the sampled HF dataset.",
+    )
+    parser.add_argument(
+        "--include-nvtx-regions",
+        action="store_true",
+        default=False,
+        help="include nvtx regions to profile",
     )
 
     args = parser.parse_args()
