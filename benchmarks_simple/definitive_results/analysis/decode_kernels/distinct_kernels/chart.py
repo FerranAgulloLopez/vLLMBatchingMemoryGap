@@ -384,6 +384,7 @@ def plot_batch_size_evolution(
 
     bottom = {}
     xaxis_labels = []
+    print(kernel_results)
     for kernel_label, kernel_lines in kernel_results:
         multiplier = 0
         for (model, x_line, y_line) in kernel_lines:
@@ -392,6 +393,7 @@ def plot_batch_size_evolution(
             if model not in bottom:
                 bottom[model] = np.zeros(len(y_line))
             y_line = np.asarray(y_line)
+
             rects = ax.bar(np.arange(len(x_line)) + offset, y_line, width, label=f'{model} {kernel_label}', bottom=bottom[model])
             multiplier += 1
             bottom[model] += y_line
@@ -404,6 +406,7 @@ def plot_batch_size_evolution(
     '''handles = [handles[1], handles[0], handles[2]]
     labels = [labels[1], labels[0], labels[2]]'''
     ax.legend(handles, labels, loc='upper right', fontsize=10)
+
     output_path = os.path.join(path, 'decode_kernels_distinct_kernels.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
 
@@ -496,11 +499,11 @@ def main():
         '.'
     )
 
-    # useful for a later on plot
-    extract_longer_matrix_multiplication(
-        model_results,
-        '.'
-    )
+    # # useful for a later on plot
+    # extract_longer_matrix_multiplication(
+    #     model_results,
+    #     '.'
+    # )
 
 
 if __name__ == '__main__':

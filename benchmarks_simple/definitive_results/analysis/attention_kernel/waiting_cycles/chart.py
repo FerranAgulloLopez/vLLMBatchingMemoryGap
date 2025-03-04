@@ -170,7 +170,7 @@ def plot_decode_cycles(
         'axes.labelsize': 15,
         'xtick.labelsize': 12,
         'ytick.labelsize': 12,
-        'legend.fontsize': 11,
+        'legend.fontsize': 12,
         'lines.linewidth': 2.0,
         'mathtext.default': 'regular',
         'axes.grid': True,
@@ -259,7 +259,7 @@ def plot_decode_cycles(
     mean_patch = Patch(facecolor='#009E73', edgecolor='black', label='Batch size = 1')
     max_patch = Patch(facecolor='#009E73', edgecolor='black', hatch='//', label='Batch size = MAX')
     legend_handles = [mean_patch, max_patch]
-    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=12, bbox_to_anchor=(0.5, 1.13))
+    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=13, bbox_to_anchor=(0.5, 1.13))
     output_path = os.path.join(path, 'attention_kernel_waiting_cycles.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
 

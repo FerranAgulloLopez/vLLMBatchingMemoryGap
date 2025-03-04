@@ -260,7 +260,7 @@ def plot_batch_size_evolution(
         'axes.labelsize': 15,
         'xtick.labelsize': 12,
         'ytick.labelsize': 12,
-        'legend.fontsize': 10,
+        'legend.fontsize': 11,
         'lines.linewidth': 2.0,
         'mathtext.default': 'regular',
         'axes.grid': True,
@@ -368,7 +368,7 @@ def plot_batch_size_evolution(
     legend_handles.extend([mean_patch, max_patch])
 
     # Create figure legend
-    fig.legend(handles=legend_handles, loc='upper center', ncol=len(metrics) + 2, frameon=False, fontsize=12, bbox_to_anchor=(0.5, 0.9))
+    fig.legend(handles=legend_handles, loc='upper center', ncol=len(metrics) + 2, frameon=False, fontsize=12, bbox_to_anchor=(0.5, 0.95))
     
     # Save plot
     output_path = os.path.join(path, 'decode_kernels_batch_size_evolution.pdf')

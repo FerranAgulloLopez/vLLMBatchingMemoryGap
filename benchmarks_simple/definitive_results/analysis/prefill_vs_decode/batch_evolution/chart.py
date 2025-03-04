@@ -112,7 +112,6 @@ def plot_time_evolution(
         all_model_results: List[Dict[str, float]],
         path: str
 ) -> None:
-    plt.style.use('ggplot')
 
     _, prefill_x, prefill_y = __prepare_lines(
         all_model_results,
@@ -135,12 +134,12 @@ def plot_time_evolution(
     # Set plot style
     plt.rcParams.update({
         'font.family': 'serif',
-        'font.size': 14,
-        'axes.titlesize': 14,
-        'axes.labelsize': 14,
-        'xtick.labelsize': 12,
-        'ytick.labelsize': 12,
-        'legend.fontsize': 12,
+        'font.size': 11,
+        'axes.titlesize': 11,
+        'axes.labelsize': 11,
+        'xtick.labelsize': 11,
+        'ytick.labelsize': 11,
+        'legend.fontsize': 11,
         'lines.linewidth': 2.5,
         'mathtext.default': 'regular',
         'axes.grid': True,
@@ -150,7 +149,7 @@ def plot_time_evolution(
     })
 
     # Prepare plot
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = plt.subplots(figsize=(5.5, 3.5))
     ax.set_facecolor('white')
     colors = ['#0072B2', '#E69F00', '#009E73', '#D55E00']
 
@@ -174,14 +173,15 @@ def plot_time_evolution(
         spine.set_color('black')
         spine.set_linewidth(1.0)
     ax2.plot(prefill_x, slowdown_y, marker='o', color='#D55E00', label='Global Slowdown', linewidth=2.5)
-    ax2.set_ylabel('Global Slowdown', fontsize=14, color='black')
+    ax2.set_ylabel('Global Slowdown', fontsize=11, color='black')
     ax2.tick_params(axis='y', colors='black', width=1.5)
     ax2.grid(False)
+    ax.grid(False)
     # ax.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.3)
     # ax2.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.3)
 
-    ax.set_xlabel('Average Batch Size (reqs)', fontsize=14, labelpad=10, color='black')
-    ax.set_ylabel('Time (s)', fontsize=14, labelpad=10, color='black')
+    ax.set_xlabel('Average Batch Size (reqs)', fontsize=11, labelpad=10, color='black')
+    ax.set_ylabel('Time (s)', fontsize=11, labelpad=10, color='black')
     
     ax.legend(loc='upper left', frameon=False)
     ax2.legend(loc='center left', frameon=False)

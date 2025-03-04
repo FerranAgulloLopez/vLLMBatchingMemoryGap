@@ -117,8 +117,6 @@ def plot_sequence_length(
         all_model_results: List[Dict[str, Any]],
         path: str
 ) -> None:
-    plt.style.use('ggplot')
-
     # prepare data
 
     # extract important information
@@ -162,21 +160,40 @@ def plot_sequence_length(
     for index in range(len(output_x_line)):
         output_x_line[index] = str(output_x_line[index])
 
+    params = {'mathtext.default': 'regular'}
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 13,
+        'axes.titlesize': 15,
+        'axes.labelsize': 15,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12,
+        'legend.fontsize': 11,
+        'lines.linewidth': 2.0,
+        'mathtext.default': 'regular',
+        'axes.grid': True,
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.4,
+        'figure.figsize': (7, 5)  # Consistent size for single plot
+    })
+
     # define figure
     nrows = 1
     ncols = 2
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, layout='constrained', figsize=(9, 4), sharey=True, sharex=True)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, layout='constrained', figsize=(8, 3.5), sharey=True, sharex=True)
 
     # plot figure
     for index_x, (label_results, x_line, y_line) in enumerate([('Prompt length', prompt_x_line, prompt_y_line), ('Output length', output_x_line, output_y_line)]):
-        axs[index_x].bar(x_line, y_line)
+        axs[index_x].bar(x_line, y_line, color='#0072B2', edgecolor='black')
 
         # label stuff
-        axs[index_x].set_xlabel(label_results)
+        axs[index_x].set_xlabel(label_results, fontsize=12)
         if index_x == 0:
-            axs[index_x].set_ylabel('Stalled cycles waiting for data (%)')
+            axs[index_x].set_ylabel('Idle cycles (%)', fontsize=13)
 
-    plt.savefig(os.path.join(path, f'attention_kernel_sequence_length'), bbox_inches='tight')
+    output_path = os.path.join(path, 'attention_kernel_sequence_length.pdf')
+    plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
+    plt.show()
 
 
 def main():
