@@ -10,6 +10,8 @@ import numpy as np
 import subprocess
 import shlex
 from copy import deepcopy
+from matplotlib.lines import Line2D
+
 
 # FOR RUNNING SCRIPT, EXPORT FIRST nsys-rep REPORT WITH "nsys export --separate-strings yes --type sqlite .nsys-rep"
 # MAYBE THE REPORT IS MISSING BECAUSE OF REPO SIZE CONSTRAINTS. IN THAT CASE, RERUN THE EXPS WITH THE PROVIDED CONFIG
@@ -377,35 +379,57 @@ def plot_batch_size_evolution(
         'axes.grid': True,
         'grid.linestyle': '--',
         'grid.linewidth': 0.4,
+        'grid.alpha':0.5,
         'figure.figsize': (7, 5)  # Consistent size for single plot
     })
-    fig, ax = plt.subplots(layout='constrained', figsize=(6, 4))
-    width = 0.15  # the width of the bars
+    fig, ax = plt.subplots(layout='constrained', figsize=(8, 3))
+    width = 0.2  # the width of the bars
+    gap = 0.0
+
+    colors = ['#0072B2', '#009E73', '#E69F00', '#D55E00']
+    order_models = ["opt-1.3b", "opt-2.7b", "llama-2-7b", "llama-2-13b"]  # Replace with your specific order
+    order_kernels = ["Attention mechanism", "Matrix multiplication", "CPU time"]  # Replace with your specific order
+    order_map = {name: i for i, name in enumerate(order_kernels)}
+    kernel_results = sorted(kernel_results, key=lambda x: order_map.get(x[0], float('inf')))
 
     bottom = {}
     xaxis_labels = []
-    print(kernel_results)
-    for kernel_label, kernel_lines in kernel_results:
+
+    for i, (kernel_label, kernel_lines) in enumerate(kernel_results):
         multiplier = 0
-        for (model, x_line, y_line) in kernel_lines:
-            offset = width * multiplier
-            # x_line = np.asarray(x_line)
+        hatches = ['', '//', '\\\\', 'xx']
+        # hatches = ['', '','','',''] 
+
+        order_map = {name: i for i, name in enumerate(order_models)}
+        kernel_lines = sorted(kernel_lines, key=lambda x: order_map.get(x[0], float('inf')))
+       
+        for m, (model, x_line, y_line) in enumerate(kernel_lines):
+            offset = width * multiplier + gap*multiplier
             if model not in bottom:
                 bottom[model] = np.zeros(len(y_line))
             y_line = np.asarray(y_line)
 
-            rects = ax.bar(np.arange(len(x_line)) + offset, y_line, width, label=f'{model} {kernel_label}', bottom=bottom[model])
+            # color_idx = multiplier % len(colors)
+            rects = ax.bar(np.arange(len(x_line)) + offset, y_line, width, label=f'{kernel_label}', bottom=bottom[model], color=colors[i], hatch=hatches[m], edgecolor='black')
             multiplier += 1
             bottom[model] += y_line
             if len(x_line) > len(xaxis_labels):
                 xaxis_labels = x_line
-    ax.set_ylabel('Time proportion (%)')
-    ax.set_xlabel('Average batch size (reqs)')
-    ax.set_xticks(np.arange(len(xaxis_labels)), xaxis_labels)
-    handles, labels = ax.get_legend_handles_labels()
-    '''handles = [handles[1], handles[0], handles[2]]
-    labels = [labels[1], labels[0], labels[2]]'''
-    ax.legend(handles, labels, loc='upper right', fontsize=10)
+    
+            y_lines_other = [100 - x for x in bottom[model]]
+            rects = ax.bar(np.arange(len(x_line)) + offset, y_lines_other, width, label=f'{kernel_label}', bottom=bottom[model], hatch=hatches[m], color=colors[i+1], edgecolor='black')
+
+    ax.set_ylabel('Time proportion (%)', fontsize=12)
+    ax.set_xlabel('Average batch size (reqs)', fontsize=12)
+    ax.set_xticks(np.arange(len(xaxis_labels)) + width * 1.5, xaxis_labels)
+    ax.set_ylim(0, 100)
+
+    from matplotlib.patches import Patch
+    legend_handles = [Line2D([0], [0], color=colors[i], lw=5, label=kernel_results[i][0]) for i in range(len(kernel_results))]
+    legend_handles.append(Line2D([0], [0], color='#D55E00', lw=5, label='Other'))
+    legend_handles.extend([Patch(facecolor='white', edgecolor='black', label=order_models[i], hatch=hatches[i]) for i in range(len(order_models))])
+
+    fig.legend(handles=legend_handles, loc='upper center', ncol=4, frameon=False, fontsize=11, bbox_to_anchor=(0.55, 1.15))
 
     output_path = os.path.join(path, 'decode_kernels_distinct_kernels.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
