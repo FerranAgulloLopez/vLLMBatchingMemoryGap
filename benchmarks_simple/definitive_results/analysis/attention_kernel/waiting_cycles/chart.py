@@ -162,7 +162,22 @@ def plot_decode_cycles(
         all_model_results: List[Dict[str, Any]],
         path: str
 ) -> None:
-    plt.style.use('ggplot')
+    params = {'mathtext.default': 'regular'}
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 13,
+        'axes.titlesize': 15,
+        'axes.labelsize': 15,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12,
+        'legend.fontsize': 11,
+        'lines.linewidth': 2.0,
+        'mathtext.default': 'regular',
+        'axes.grid': True,
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.4,
+        'figure.figsize': (7, 5)  # Consistent size for single plot
+    })
 
     # prepare data
 
@@ -201,14 +216,18 @@ def plot_decode_cycles(
     # define figure
     nrows = 1
     ncols = 2
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, layout='constrained', figsize=(9, 3), sharey=True, sharex=True)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, layout='constrained', figsize=(8, 3), sharey=True, sharex=False)
 
     # plot figure
     model_order = ['opt-1.3b', 'opt-2.7b', 'llama-2-7b', 'llama-2-13b']
-    model_labels = ['OPT-1.3b', 'OPT-2.7b', 'LLaMA-2-7b', 'LLaMA-2-13b']
-    for index_x, (label_results, results) in enumerate([('xformers attention', xformers_results), ('flash attention', flash_results)]):
+    labels = ['OPT-1.3b', 'OPT-2.7b', 'LLaMA-2-7b', 'LLaMA-2-13b']
+    x = np.arange(len(model_order))  # X positions for models
+    bar_width = 0.4
+
+    for index_x, (label_results, results) in enumerate([('Xformers Attention', xformers_results), ('Flash Attention', flash_results)]):
         min_values = []
         max_values = []
+
         for model in model_order:
             if model not in results:
                 min_values.append(None)
@@ -217,16 +236,32 @@ def plot_decode_cycles(
                 min_values.append(results[model]['1'])
                 max_values.append(results[model]['max'])
 
-        axs[index_x].hlines(y=list(reversed(model_labels)), xmin=list(reversed(min_values)), xmax=list(reversed(max_values)), color='grey', zorder=1)
-        axs[index_x].scatter(list(reversed(min_values)), list(reversed(model_labels)), label='batch size = 1')
-        axs[index_x].scatter(list(reversed(max_values)), list(reversed(model_labels)), label='batch size = MAX')
+        model_labels = [model for model, v in zip(labels, min_values) if v is not None]
+        min_values = [v for v in min_values if v is not None]
+        max_values = [v for v in max_values if v is not None]
+        x = np.arange(len(model_labels))
 
-        # label stuff
+        print(model_labels)
+
+        axs[index_x].bar(x, max_values, bar_width, label='Batch size = MAX', color='#009E73', alpha=0.7, edgecolor='black', hatch='//')
+        axs[index_x].bar(x, min_values, bar_width, label='Batch size = 1', color='#009E73', alpha=1, edgecolor='black')
+
+        axs[index_x].set_title(label_results, fontsize=13)
+        axs[index_x].set_ylabel('Idle cycles (%)', fontsize=13)
+        axs[index_x].set_xticks(x)
+        axs[index_x].set_xticklabels(model_labels, fontsize=12, rotation=30, ha="right")
+        axs[index_x].grid(axis='y', linestyle='--', linewidth=0.5, alpha=0.6)
+
         axs[index_x].set_title(label_results)
-        axs[index_x].set_xlabel('Stalled cycles waiting for data (%)')
-        axs[index_x].legend(loc='center left', fontsize=10)
+        axs[index_x].set_ylim(0, 100)
 
-    plt.savefig(os.path.join(path, f'attention_kernel_waiting_cycles'), bbox_inches='tight')
+    from matplotlib.patches import Patch
+    mean_patch = Patch(facecolor='#009E73', edgecolor='black', label='Batch size = 1')
+    max_patch = Patch(facecolor='#009E73', edgecolor='black', hatch='//', label='Batch size = MAX')
+    legend_handles = [mean_patch, max_patch]
+    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=12, bbox_to_anchor=(0.5, 1.13))
+    output_path = os.path.join(path, 'attention_kernel_waiting_cycles.pdf')
+    plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
 
 
 def cache_values(
@@ -304,10 +339,10 @@ def main():
         '.'
     )
 
-    cache_values(
-        model_results,
-        '.'
-    )
+    # cache_values(
+    #     model_results,
+    #     '.'
+    # )
 
 
 if __name__ == '__main__':

@@ -8,6 +8,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from copy import deepcopy
 
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+import os
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
 
 # MAYBE THE NCU REPORT IS MISSING BECAUSE OF REPO SIZE CONSTRAINTS. IN THAT CASE, RERUN THE EXPS WITH THE PROVIDED CONFIG
 
@@ -232,7 +238,6 @@ def plot_decode_timewise(
     import matplotlib.ticker as ticker
     import os
 
-    # Define figure parameters for a high-quality conference plot
     plt.rcParams.update({
         'font.family': 'serif',
         'font.size': 15,  # Slightly increased for readability
@@ -249,24 +254,22 @@ def plot_decode_timewise(
         'figure.figsize': (7.5, 5.5)  # Slightly adjusted for better aspect ratio
     })
 
-    # Define colors & markers for better contrast
-    colors = ['#009E73', '#D55E00', '#CC79A7', '#0072B2', '#E69F00']  # Added purple for differentiation
-    # colors = ['#CC79A7', '#D55E00','#009E73' , '#0072B2', '#E69F00']  # Added purple for differentiation
-
-    markers = ['o', 's', 'D', '^', '*']  # Unique markers for each method
+    # Define colors & markers
+    colors = ['#009E73', '#D55E00', '#CC79A7', '#0072B2', '#E69F00']
+    markers = ['o', 's', 'D', '^', '*']
 
     # Create figure
-    l = 1000
-    fig, axs = plt.subplots(figsize=(7.5, 5.5), constrained_layout=True)
-
-    # Peak work single precision (roofline)
-    x_line = np.arange(0, l)
-    y_line_compute = [peak_work_single_precision] * np.shape(x_line)[0]
-    axs.plot(x_line, y_line_compute, label='Single precision roofline', linewidth=4, color=colors[0])
+    l = 300
+    fig, axs = plt.subplots(figsize=(6.5, 4.5), constrained_layout=True)
 
     # Find intersection point
     intersection_x = peak_work_single_precision / peak_traffic  # Where y_compute = y_memory
     intersection_y = peak_work_single_precision
+
+    # Peak work single precision (roofline)
+    x_line = np.arange(intersection_x, l)
+    y_line_compute = [peak_work_single_precision] * np.shape(x_line)[0]
+    axs.plot(x_line, y_line_compute, label='Single precision roofline', linewidth=4, color=colors[0])
 
     # Peak memory bandwidth
     x_line = np.arange(0.01, intersection_x)
@@ -274,17 +277,17 @@ def plot_decode_timewise(
     axs.plot(x_line, y_line_memory, label='Memory bandwidth', linewidth=4, color=colors[1])
     axs.set_xlim(left=x_line[0])
 
-    # Add vertical line at intersection
+    # Add vertical dashed line at intersection
     axs.axvline(intersection_x, linestyle='--', color='gray', linewidth=2)
 
-    # Shading **only** the memory-bound region (left of intersection, below memory bandwidth)
+    # Modify horizontal line to be dashed before intersection
+    axs.plot(np.arange(0, intersection_x), [peak_work_single_precision] * len(np.arange(0.01, intersection_x)), linestyle='--', color='gray', linewidth=2)
+
+    # Shading memory-bound and compute-bound regions
     x_fill = np.linspace(x_line[0], intersection_x, 100)
     y_fill = np.asarray([x * peak_traffic for x in x_fill])
     axs.fill_between(x_fill, y_fill, color='lightcoral', alpha=0.3)
-    axs.fill_betweenx(
-        np.linspace(0, intersection_y, 100),
-        intersection_x, l, color='lightgreen', alpha=0.3
-    )
+    axs.fill_betweenx(np.linspace(0, intersection_y, 100), intersection_x, l, color='lightgreen', alpha=0.3)
 
     # Achieved work and traffic for different methods
     methods = {
@@ -294,48 +297,45 @@ def plot_decode_timewise(
     }
 
     for label, (work, traffic, color, marker) in methods.items():
-        print(work[1])
         x_line = [work[2][0] / traffic[2][0], work[2][-1] / traffic[2][-1]]
         y_line = [work[2][0], work[2][-1]]
         
         axs.plot(
-        x_line, y_line, label=label, color=color,
-        marker=marker, markersize=10, markeredgewidth=1.5, markeredgecolor='black'
+            x_line, y_line, label=label, color=color,
+            marker=marker, markersize=10, markeredgewidth=1.5, markeredgecolor='black'
         )
-        list_batch = [1,2,4,8,16,32,64,96,128,192,256,384,512]
-        if label == "FlashAttention kernel":
-            axs.text(x_line[0] * 1.2, y_line[0] * 1.1, '1', color='black', fontsize=12)
-            axs.text(x_line[1] * 1.25, y_line[1] * 0.9, 'M', color='black', fontsize=12)
-        elif label == "Matmul kernel":
-            axs.text(x_line[0] * 1.25, y_line[0] * 0.8, '1', color='black', fontsize=12)
-            axs.text(x_line[1] * 1, y_line[1] * 0.6, 'M', color='black', fontsize=12)
-        elif label == "Xformers kernel":
-            axs.text(x_line[0] * 0.7, y_line[0] * 1.1, '1', color='black', fontsize=12)
-            axs.text(x_line[1] * 0.6, y_line[1] * 1.1, f'{list_batch[len(work[2])]}', color='black', fontsize=12)
 
-    # Set log scales with improved tick placement
+        if label == "FlashAttention kernel":
+            axs.text(x_line[1] * 1.25, y_line[1] * 0.9, 'MAX', color='black', fontsize=12)
+        elif label == "Matmul kernel":
+            axs.text(x_line[1] * 1, y_line[1] * 0.6, 'MAX', color='black', fontsize=12)
+        elif label == "Xformers kernel":
+            axs.text(x_line[1] * 0.4, y_line[1] * 1.1, 'MAX', color='black', fontsize=12)
+
+    # Set log scales
     axs.set_xscale('log')
     axs.set_yscale('log')
     axs.xaxis.set_major_locator(ticker.LogLocator(base=10.0, subs=[1.0], numticks=10))
     axs.yaxis.set_major_locator(ticker.LogLocator(base=10.0, subs=[1.0], numticks=10))
 
-    y_min = min(y_line_memory)  # Minimum y value from memory bandwidth line
-    y_max = peak_work_single_precision * 50  # Set max y to be ~4x the horizontal line for centering
-
+    # Adjust y-limits
+    y_max = peak_work_single_precision * 3
     axs.set_ylim(0, y_max)
 
     # Label axes
     axs.set_ylabel('Performance (Flop/s)', fontsize=16)
     axs.set_xlabel('Arithmetic Intensity (FLOP/byte)', fontsize=16)
+    axs.text(0.15, peak_work_single_precision * 0.0008, 'Memory-bound', color='black', fontsize=12, fontweight='bold')
+    axs.text(intersection_x * 1.15, peak_work_single_precision * 0.0008, 'Compute-bound', color='black', fontsize=12, fontweight='bold')
 
-    y_text_position = y_min * 1.2  # Slightly above the lowest y value
+    legend_handles = [
+        Line2D([0], [0], color=color, marker=marker, markersize=10, linestyle='-', linewidth=3, label=label, markeredgewidth=1.5, markeredgecolor='black')
+        for label, (_, _, color, marker) in methods.items()
+    ]
+    legend_handles.append(Line2D([0], [0], color=colors[0], lw=4, linestyle='-', label='Single precision roofline'))
+    legend_handles.append(Line2D([0], [0], color=colors[1], lw=4, linestyle='-', label='Memory bandwidth'))
 
-    # Updated annotations, now aligned on top of the x-axis line
-    axs.text(0.07, y_text_position, 'Memory-bound region', color='black', fontsize=13, verticalalignment='bottom')
-
-
-    # Adjust legend to include only the necessary information
-    axs.legend(loc='upper left', fontsize=12, frameon=True, fancybox=True, edgecolor='black')
+    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=12, bbox_to_anchor=(0.57, 1.2))
 
     # Save as high-resolution vector graphic
     output_path = os.path.join(path, 'attention_kernel_roofline.pdf')
@@ -405,6 +405,7 @@ def table_models(
     for results in single_all_model_results:
         results['achieved_work'] = results['ncu_metrics']['achieved_work']
         results['achieved_traffic'] = results['ncu_metrics']['achieved_traffic']
+
     single_achieved_work_right = __prepare_lines(
         single_all_model_results,
         'batch_size',
@@ -428,7 +429,9 @@ def table_models(
     print('peak_traffic', print_metric_value(peak_traffic))
     print('Data by model')
     for index_model in range(len(max_achieved_traffic_right)):
+        print('Model', single_achieved_work_right[index_model][0], max_achieved_work_right[index_model][0])
         model_label = max_achieved_traffic_right[index_model][0]
+        print(model_label, single_achieved_work_right[index_model][0])
         assert model_label == max_achieved_work_right[index_model][0]
         assert model_label == single_achieved_work_right[index_model][0]
         assert model_label == single_achieved_traffic_right[index_model][0]
@@ -463,10 +466,10 @@ def main():
         '.'
     )
 
-    table_models(
-        model_results,
-        '.'
-    )
+    # table_models(
+    #     model_results,
+    #     '.'
+    # )
 
 
 if __name__ == '__main__':

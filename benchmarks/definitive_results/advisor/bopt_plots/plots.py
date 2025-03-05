@@ -63,7 +63,7 @@ def plot_results(results: List[Dict[str, float]], output_path: str):
     relative_improvement_latency = np.diff(latencies) / latencies[:-1]
     
     L_threshold = 0.10  # 10% increase threshold
-    epsilon = 0.4  # 40% improvement cutoff
+    epsilon = 0.2  # 40% improvement cutoff
     plateau_indices = np.where((relative_improvement_throughput < epsilon) & (relative_improvement_latency > L_threshold))[0]
     B_opt_latency = batch_sizes[plateau_indices[0] + 1] if len(plateau_indices) > 0 else batch_sizes[-1]
     
@@ -96,7 +96,7 @@ def plot_results(results: List[Dict[str, float]], output_path: str):
     plt.savefig(output_path)
 
 def main():
-    model = "opt-1.3b"
+    model = "opt-2.7b"
     results_mean = extract_results(f'/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/benchmarks/definitive_results/background/{model}')
     plot_results(results_mean, f'./plots_{model}.pdf')
 
