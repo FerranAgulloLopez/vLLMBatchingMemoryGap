@@ -1,0 +1,36 @@
+WARNING 03-04 15:16:53 _custom_ops.py:19] Failed to import from vllm._C with ModuleNotFoundError("No module named 'vllm._C'")
+Namespace(backend='openai', host='localhost', port=12425, endpoint='/v1/completions', dataset=None, dataset_name='sharegpt', dataset_path='/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/data/ShareGPT_V3_unfiltered_cleaned_split.json', model='/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b/', tokenizer=None, best_of=1, use_beam_search=False, num_prompts=50, logprobs=None, request_rate=inf, seed=0, trust_remote_code=False, disable_tqdm=True, save_result=True, metadata=None, result_dir='benchmarks/definitive_results/replication/time_wise/opt-1.3b/_96__1', result_filename=None, ignore_eos=False, percentile_metrics='ttft,tpot,itl', metric_percentiles='99', launch_server=True, server_args='--disable-log-requests --disable-log-stats --model=/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b/ --max-model-len=2048 --max-num-seqs=96', multiple_servers=1, launch_server_with_nsight=False, disable_log_stats=True, sonnet_input_len=550, sonnet_output_len=150, sonnet_prefix_len=200, sharegpt_output_len=None, random_input_len=1024, random_output_len=128, random_range_ratio=1.0, random_prefix_len=0, hf_subset=None, hf_split=None, hf_output_len=None, include_nvtx_regions=True)
+Servers started
+Requests to servers. Values: ['http://localhost:12425/v1/completions']. Counts: [50]
+Starting initial single prompt test run for url http://localhost:12425/v1/completions
+Initial test run completed. Starting main benchmark run...
+Traffic request rate: inf
+============ Serving Benchmark Result ============
+Successful requests:                     50        
+Benchmark duration (s):                  5.67      
+Total input tokens:                      8886      
+Total generated tokens:                  16323     
+Request throughput (req/s):              8.83      
+Output token throughput (tok/s):         2881.25   
+Total Token throughput (tok/s):          4449.75   
+---------------Time to First Token----------------
+Mean TTFT (ms):                          138.65    
+Median TTFT (ms):                        142.00    
+P99 TTFT (ms):                           164.97    
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          6.79      
+Median TPOT (ms):                        6.21      
+P99 TPOT (ms):                           19.09     
+---------------Inter-token Latency----------------
+Mean ITL (ms):                           6.04      
+Median ITL (ms):                         6.03      
+P99 ITL (ms):                            12.21     
+==================================================
+Servers terminated
+Hint: CUDA_VISIBLE_DEVICES is set. You may want to use '--gpu-metrics-devices=cuda-visible' instead of '--gpu-metrics-devices=all'
+GPU 0: General Metrics for NVIDIA GH100 (any frequency)
+Collecting data...
+Generating '/scratch/tmp/16292124/nsys-report-586a.qdstrm'
+[1/1] [0%                          ] .nsys-rep[1/1] [0%                          ] .nsys-rep[1/1] [8%                          ] .nsys-rep[1/1] [7%                          ] .nsys-rep[1/1] [8%                          ] .nsys-rep[1/1] [7%                          ] .nsys-rep[1/1] [8%                          ] .nsys-rep[1/1] [11%                         ] .nsys-rep[1/1] [10%                         ] .nsys-rep[1/1] [11%                         ] .nsys-rep[1/1] [10%                         ] .nsys-rep[1/1] [11%                         ] .nsys-rep[1/1] [10%                         ] .nsys-rep[1/1] [11%                         ] .nsys-rep[1/1] [12%                         ] .nsys-rep[1/1] [11%                         ] .nsys-rep[1/1] [12%                         ] .nsys-rep[1/1] [11%                         ] .nsys-rep[1/1] [13%                         ] .nsys-rep[1/1] [12%                         ] .nsys-rep[1/1] [13%                         ] .nsys-rep[1/1] [14%                         ] .nsys-rep[1/1] [13%                         ] .nsys-rep[1/1] [14%                         ] .nsys-rep[1/1] [13%                         ] .nsys-rep[1/1] [14%                         ] .nsys-rep[1/1] [13%                         ] .nsys-rep[1/1] [12%                         ] .nsys-rep[1/1] [13%                         ] .nsys-rep[1/1] [14%                         ] .nsys-rep[1/1] [13%                         ] .nsys-rep[1/1] [12%                         ] .nsys-rep[1/1] [13%                         ] .nsys-rep[1/1] [12%                         ] .nsys-rep[1/1] [11%                         ] .nsys-rep[1/1] [12%                         ] .nsys-rep[1/1] [11%                         ] .nsys-rep[1/1] [12%                         ] .nsys-rep[1/1] [13%                         ] .nsys-rep[1/1] [14%                         ] .nsys-rep[1/1] [=15%                        ] .nsys-rep[1/1] [=16%                        ] .nsys-rep[1/1] [=17%                        ] .nsys-rep[1/1] [==18%                       ] .nsys-rep[1/1] [==19%                       ] .nsys-rep[1/1] [==20%                       ] .nsys-rep[1/1] [==21%                       ] .nsys-rep[1/1] [===22%                      ] .nsys-rep[1/1] [===23%                      ] .nsys-rep[1/1] [===24%                      ] .nsys-rep[1/1] [====25%                     ] .nsys-rep[1/1] [====26%                     ] .nsys-rep[1/1] [====27%                     ] .nsys-rep[1/1] [====28%                     ] .nsys-rep[1/1] [=====29%                    ] .nsys-rep[1/1] [=====30%                    ] .nsys-rep[1/1] [=====31%                    ] .nsys-rep[1/1] [=====32%                    ] .nsys-rep[1/1] [======33%                   ] .nsys-rep[1/1] [======34%                   ] .nsys-rep[1/1] [======35%                   ] .nsys-rep[1/1] [=======36%                  ] .nsys-rep[1/1] [=======37%                  ] .nsys-rep[1/1] [=======38%                  ] .nsys-rep[1/1] [=======39%                  ] .nsys-rep[1/1] [========40%                 ] .nsys-rep[1/1] [========41%                 ] .nsys-rep[1/1] [========42%                 ] .nsys-rep[1/1] [=========43%                ] .nsys-rep[1/1] [=========44%                ] .nsys-rep[1/1] [=========45%                ] .nsys-rep[1/1] [=========46%                ] .nsys-rep[1/1] [==========47%               ] .nsys-rep[1/1] [==========48%               ] .nsys-rep[1/1] [==========49%               ] .nsys-rep[1/1] [===========50%              ] .nsys-rep[1/1] [===========51%              ] .nsys-rep[1/1] [===========52%              ] .nsys-rep[1/1] [===========53%              ] .nsys-rep[1/1] [============54%             ] .nsys-rep[1/1] [============55%             ] .nsys-rep[1/1] [============56%             ] .nsys-rep[1/1] [========================100%] .nsys-rep[1/1] [========================100%] .nsys-rep
+Generated:
+    /home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/benchmarks/definitive_results/replication/time_wise/opt-1.3b/_96__1/.nsys-rep
