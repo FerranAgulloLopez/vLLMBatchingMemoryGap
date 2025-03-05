@@ -65,7 +65,7 @@ def extract_results(path: str, model: str) -> List[Dict[str, Any]]:
         return _id
 
     collected_ids: Set[str] = set()
-    id_metrics: List[str] = ['model', 'set_batch_size', 'replicas']
+    id_metrics: List[str] = ['model', 'set_batch_size', 'replicas', 'chunked']
     results = []
     rerun_errors: List[str] = []
     unknown_errors: int = 0
@@ -75,6 +75,7 @@ def extract_results(path: str, model: str) -> List[Dict[str, Any]]:
                 continue
             batch_size: int = int(folder.split('_')[1])
             replicas: int = int(folder.split('_')[3])
+            chunked: bool = True if 'chunked' in path else False
             try:
                 metrics = extract_experiment_metric(os.path.join(path, folder), replicas)
             except Exception as e:
@@ -87,6 +88,7 @@ def extract_results(path: str, model: str) -> List[Dict[str, Any]]:
             metrics['model'] = model
             metrics['set_batch_size'] = batch_size
             metrics['replicas'] = replicas
+            metrics['chunked'] = chunked
             _id = create_id(metrics, id_metrics)
             if _id in collected_ids:
                 raise ValueError('Repeated results')
@@ -156,9 +158,11 @@ def show_table(
             latency = results['latency']
             kv_cache = results['kv_cache']
             batch_size = results['set_batch_size']
+            chunked = results['chunked']
             print(
                 'Model', model,
                 'batch_size', batch_size,
+                'chunked', chunked,
                 'replicas', replicas,
                 'throughput', print_metric_value(throughput),
                 'latency', print_metric_value(latency),
@@ -168,7 +172,7 @@ def show_table(
 
 def main():
     model_results: List[Dict[str, Any]] = []
-    for model in ['opt-1.3b', 'opt-2.7b']:
+    for model in ['opt-1.3b', 'opt-1.3b_chunked', 'opt-2.7b', 'opt-2.7b_chunked']:
         model_results += extract_results(model, model)
 
     show_table(

@@ -164,7 +164,7 @@ def extract_results(path: str, model: str) -> List[Dict[str, Any]]:
         return _id
 
     collected_ids: Set[str] = set()
-    id_metrics: List[str] = ['model', 'set_batch_size', 'replicas']
+    id_metrics: List[str] = ['model', 'set_batch_size', 'replicas', 'chunked']
     results = []
     rerun_errors: List[str] = []
     unknown_errors: int = 0
@@ -174,6 +174,7 @@ def extract_results(path: str, model: str) -> List[Dict[str, Any]]:
                 continue
             batch_size: int = int(folder.split('_')[1])
             replicas: int = int(folder.split('_')[3])
+            chunked: bool = True if 'chunked' in path else False
             try:
                 metrics = extract_experiment_metric(os.path.join(path, folder), replicas)
             except Exception as e:
@@ -186,6 +187,7 @@ def extract_results(path: str, model: str) -> List[Dict[str, Any]]:
             metrics['model'] = model
             metrics['set_batch_size'] = batch_size
             metrics['replicas'] = replicas
+            metrics['chunked'] = chunked
             _id = create_id(metrics, id_metrics)
             if _id in collected_ids:
                 raise ValueError('Repeated results')
@@ -227,9 +229,11 @@ def show_table(
         batch_size = model_results['set_batch_size']
         cpu_time = model_results['cpu_time']
         gpu_metrics = model_results['gpu_metrics_values']
+        chunked = model_results['chunked']
         print(
             'Model', model,
             'batch size', batch_size,
+            'chunked', chunked,
             'replicas', replicas,
             'CPU time', cpu_time,
             'GPU metrics', gpu_metrics
@@ -246,7 +250,7 @@ def main():
         with open(os.path.join(PICKLE_ROOT_PATH, 'replication_gpu_metrics'), 'rb') as file:
             model_results = pickle.load(file)
     else:
-        for model in ['opt-1.3b', 'opt-2.7b']:
+        for model in ['opt-1.3b', 'opt-1.3b_chunked', 'opt-2.7b', 'opt-2.7b_chunked']:
             model_results += extract_results(model, model)
         with open(os.path.join(PICKLE_ROOT_PATH, 'replication_gpu_metrics'), 'wb') as file:
             pickle.dump(model_results, file)
