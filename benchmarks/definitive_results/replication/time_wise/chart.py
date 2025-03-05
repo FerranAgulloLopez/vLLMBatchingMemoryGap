@@ -288,22 +288,6 @@ def plot_timewise(
             legend_patches.append(patches.Patch(color=replica_colors[replica_index], label=legend_label, linewidth=0.1))
             for aux_index, (kernel_start, kernel_end) in enumerate(replica_values):
                 level_index = 3
-                # TODO refactor sorry I was to tired to think of a simple algorithm
-                if replica_label == 2:
-                    if replica_index == 0:
-                        level_index = 2 + 0.6
-                    elif replica_index == 1:
-                        level_index = 4 - 0.6
-                if replica_label == 4:
-                    if replica_index == 0:
-                        level_index = 0
-                    elif replica_index == 1:
-                        level_index = 2
-                    elif replica_index == 2:
-                        level_index = 4
-                    elif replica_index == 3:
-                        level_index = 6
-
                 print(len(replica_values) - aux_index)
                 rect = patches.FancyBboxPatch(
                     (kernel_start, level_index),
@@ -318,20 +302,22 @@ def plot_timewise(
 
         if index_x == 0:
             axs[index_x].set_ylabel('Kernel timeline')
-        if index_x == 1:
+        elif index_x == 1:
             axs[index_x].legend(handles=legend_patches, frameon=True)
 
         axs[index_x].set_ylim(3 - 0.6, 3 + 1.2)
         axs[index_x].set_xlim(time_window_by_replica[replica_label][0], time_window_by_replica[replica_label][1])
+        axs[index_x].yaxis.set_ticks([])
         axs[index_x].yaxis.set_ticklabels([])
 
         import matplotlib.ticker as ticker
         def ns_to_sec(x, pos):
             return f"{x * 1e-6:.1f}"
         axs[index_x].xaxis.set_major_formatter(ticker.FuncFormatter(ns_to_sec))
-
-        axs[index_x].set_xlabel(f'Time (ms) - {replica_label} replicas')
-
+        if index_x == 0:
+            axs[index_x].set_xlabel(f'Time (ms) - {replica_label} replica')
+        elif index_x == 1:
+            axs[index_x].set_xlabel(f'Time (ms) - {replica_label} replicas')
     output_path = os.path.join(path, 'replication_timewise.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
 
