@@ -1,0 +1,8 @@
+load SINGULARITY/3.11.5 (PATH)
+WARNING: CPU IP/backtrace sampling not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+WARNING: CPU context switch tracing not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+slurmstepd: error: *** JOB 16338895 ON as01r1b08 CANCELLED AT 2025-03-05T12:23:27 ***

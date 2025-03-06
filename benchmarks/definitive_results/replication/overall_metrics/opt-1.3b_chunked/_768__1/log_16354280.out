@@ -1,0 +1,30 @@
+WARNING 03-05 19:00:27 _custom_ops.py:19] Failed to import from vllm._C with ModuleNotFoundError("No module named 'vllm._C'")
+Namespace(backend='openai', host='localhost', port=26257, endpoint='/v1/completions', dataset=None, dataset_name='sharegpt', dataset_path='/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/data/ShareGPT_V3_unfiltered_cleaned_split.json', model='/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b', tokenizer=None, best_of=1, use_beam_search=False, num_prompts=2000, logprobs=None, request_rate=inf, seed=0, trust_remote_code=False, disable_tqdm=True, save_result=True, metadata=None, result_dir='benchmarks/definitive_results/replication/overall_metrics/opt-1.3b_chunked/_768__1', result_filename=None, ignore_eos=False, percentile_metrics='ttft,tpot,itl', metric_percentiles='99', launch_server=True, server_args='--disable-log-requests --model=/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b --max-model-len=2048 --enable-chunked-prefill --max-num-batched-tokens=2048 --max-num-seqs=768', multiple_servers=1, launch_server_with_nsight=False, disable_log_stats=False, sonnet_input_len=550, sonnet_output_len=150, sonnet_prefix_len=200, sharegpt_output_len=None, random_input_len=1024, random_output_len=128, random_range_ratio=1.0, random_prefix_len=0, hf_subset=None, hf_split=None, hf_output_len=None, include_nvtx_regions=False)
+Servers started
+Requests to servers. Values: ['http://localhost:26257/v1/completions']. Counts: [2000]
+Starting initial single prompt test run for url http://localhost:26257/v1/completions
+Initial test run completed. Starting main benchmark run...
+Traffic request rate: inf
+============ Serving Benchmark Result ============
+Successful requests:                     2000      
+Benchmark duration (s):                  67.93     
+Total input tokens:                      221292    
+Total generated tokens:                  584713    
+Request throughput (req/s):              29.44     
+Output token throughput (tok/s):         8607.28   
+Total Token throughput (tok/s):          11864.81  
+---------------Time to First Token----------------
+Mean TTFT (ms):                          12355.06  
+Median TTFT (ms):                        7663.43   
+P99 TTFT (ms):                           36829.81  
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          68.05     
+Median TPOT (ms):                        68.84     
+P99 TPOT (ms):                           92.56     
+---------------Inter-token Latency----------------
+Mean ITL (ms):                           65.30     
+Median ITL (ms):                         57.75     
+P99 ITL (ms):                            370.42    
+==================================================
+Concurrent checkers terminated
+Servers terminated
