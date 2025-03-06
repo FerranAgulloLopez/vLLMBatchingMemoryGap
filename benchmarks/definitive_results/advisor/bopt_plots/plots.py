@@ -72,33 +72,40 @@ def plot_results(results: List[Dict[str, float]], output_path: str, epsilon: flo
 
     print(f"Optimal Batch Size (B_opt): {B_opt}")
 
-    # Plot settings
+    params = {'mathtext.default': 'regular'}
     plt.rcParams.update({
-        'font.size': 15,
+        'font.family': 'serif',
+        'font.size': 13,
+        'axes.titlesize': 19,
+        'axes.labelsize': 19,
+        'xtick.labelsize': 16,
+        'ytick.labelsize': 16,
+        'legend.fontsize': 16,
+        'lines.linewidth': 2.0,
+        'mathtext.default': 'regular',
         'axes.grid': True,
         'grid.linestyle': '--',
-        'figure.figsize': (7, 5)
+        'grid.linewidth': 0.4,
+        'figure.figsize': (7, 5)  # Consistent size for single plot
     })
-    
+    colors_list = ['#0072B2', '#E69F00', '#009E73', '#D55E00']
     fig, axs = plt.subplots(1, 2, figsize=(12, 5))
-    colors_list = ['#0072B2', '#E69F00']
+
 
     # Throughput vs Latency Trade-off
     axs[0].plot(latencies, throughputs, 'co-')
     axs[0].axvline(
         x=latencies[np.where(batch_sizes == B_opt)[0][0]], 
-        color=colors_list[0], linestyle='--', label=f"Optimal Batch: {B_opt}"
+        color=colors_list[2], linestyle='--', label=f"Optimal Batch: {B_opt}"
     )
-    axs[0].set_xlim(0, np.max(latencies) * 1.1)  # Ensure x-axis starts at 0
-    axs[0].set_ylim(0, np.max(throughputs) * 1.1)  # Ensure y-axis starts at 0
     axs[0].set_xlabel("Latency (ms)")
     axs[0].set_ylabel("Throughput (tokens/sec)")
     axs[0].set_title("Throughput vs Latency Trade-off")
     axs[0].legend()
 
     axs[1].plot(batch_sizes[:-1], dT_dB, 'ro-', color=colors_list[1])
-    axs[1].axvline(x=B_opt, linestyle='--', label=f"Optimal Batch: {B_opt}", color=colors_list[0])
-    axs[1].axhline(y=epsilon, color="gray", linestyle="--", label=f"Threshold ε={epsilon}")
+    axs[1].axvline(x=B_opt, linestyle='--', label=f"Optimal Batch: {B_opt}", color=colors_list[2])
+    axs[1].axhline(y=epsilon, color=colors_list[3], linestyle="--", label=f"Threshold ε={epsilon}")
     axs[1].set_xlabel("Batch Size")
     axs[1].set_ylabel("Throughput Gain per Batch")
     axs[1].set_title("Throughput Improvement Analysis")
@@ -115,7 +122,7 @@ def main():
     parser.add_argument("--l", type=float, default=5)
     args = parser.parse_args()
 
-    model = "opt-2.7b"
+    model = "opt-1.3b"
     results_mean = extract_results(
         f'/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/benchmarks/definitive_results/background/{model}'
     )
