@@ -1,4 +1,5 @@
 import os
+import argparse
 import glob
 import json
 import numpy as np
@@ -51,22 +52,27 @@ def extract_results(path: str) -> List[Dict[str, float]]:
 
     return results
 
-def plot_results(results: List[Dict[str, float]], output_path: str):
+
+def plot_results(results: List[Dict[str, float]], output_path: str, epsilon: float = 0.2, L: int = 5):
     batch_sizes = np.array([r['batch_size'] for r in results])
     throughputs = np.array([r['throughput'] for r in results])
     latencies = np.array([r['mean_ttft_ms'] for r in results])
-    
-    dT_dlogB = np.diff(throughputs) / np.diff(np.log2(batch_sizes))
-    dL_dlogB = np.diff(latencies) / np.diff(np.log2(batch_sizes))
-    
-    relative_improvement_throughput = np.diff(throughputs) / throughputs[:-1]
-    relative_improvement_latency = np.diff(latencies) / latencies[:-1]
-    
-    L_threshold = 0.10  # 10% increase threshold
-    epsilon = 0.2  # 40% improvement cutoff
-    plateau_indices = np.where((relative_improvement_throughput < epsilon) & (relative_improvement_latency > L_threshold))[0]
-    B_opt_latency = batch_sizes[plateau_indices[0] + 1] if len(plateau_indices) > 0 else batch_sizes[-1]
-    
+
+    idx_32 = np.argmin(np.abs(batch_sizes - 32))
+    latency_32 = latencies[idx_32]
+    latency_threshold = L * latency_32  # Define the latency limit
+
+    print(f"Latency at B=32: {latency_32:.2f} ms, Latency Threshold: {latency_threshold:.2f} ms")
+
+    dT_dB = np.diff(throughputs) / np.diff(batch_sizes)
+    plateau_indices = np.where(dT_dB < epsilon)[0]
+    valid_latency_indices = np.where(latencies <= latency_threshold)[0]
+    valid_indices = np.intersect1d(plateau_indices, valid_latency_indices)
+    B_opt = batch_sizes[np.max(valid_latency_indices)]  # Largest batch size within latency limit
+
+    print(f"Optimal Batch Size (B_opt): {B_opt}")
+
+    # Plot settings
     plt.rcParams.update({
         'font.size': 15,
         'axes.grid': True,
@@ -74,31 +80,49 @@ def plot_results(results: List[Dict[str, float]], output_path: str):
         'figure.figsize': (7, 5)
     })
     
-    fig, axs = plt.subplots(1, 2, figsize=(10, 4))
+    fig, axs = plt.subplots(1, 2, figsize=(12, 5))
     colors_list = ['#0072B2', '#E69F00']
-    
+
+    # Throughput vs Latency Trade-off
     axs[0].plot(latencies, throughputs, 'co-')
-    axs[0].axvline(x=latencies[np.where(batch_sizes == B_opt_latency)[0][0]], color=colors_list[0], linestyle='--', label=f"Optimal Batch Size: {B_opt_latency}")
+    axs[0].axvline(
+        x=latencies[np.where(batch_sizes == B_opt)[0][0]], 
+        color=colors_list[0], linestyle='--', label=f"Optimal Batch: {B_opt}"
+    )
+    axs[0].set_xlim(0, np.max(latencies) * 1.1)  # Ensure x-axis starts at 0
+    axs[0].set_ylim(0, np.max(throughputs) * 1.1)  # Ensure y-axis starts at 0
     axs[0].set_xlabel("Latency (ms)")
     axs[0].set_ylabel("Throughput (tokens/sec)")
     axs[0].set_title("Throughput vs Latency Trade-off")
     axs[0].legend()
-    
-    axs[1].plot(batch_sizes[:-1], dT_dlogB, 'ro-', label="dT/dlogB", color=colors_list[1])
-    axs[1].axvline(x=B_opt_latency, linestyle='--', label=f"Optimal Batch Size: {B_opt_latency}", color=colors_list[0])
-    axs[1].set_xscale("log")
+
+    axs[1].plot(batch_sizes[:-1], dT_dB, 'ro-', color=colors_list[1])
+    axs[1].axvline(x=B_opt, linestyle='--', label=f"Optimal Batch: {B_opt}", color=colors_list[0])
+    axs[1].axhline(y=epsilon, color="gray", linestyle="--", label=f"Threshold ε={epsilon}")
     axs[1].set_xlabel("Batch Size")
-    axs[1].set_ylabel("dT/dlogB (Throughput)")
-    axs[1].set_title("First Derivative of Throughput & Latency")
+    axs[1].set_ylabel("Throughput Gain per Batch")
+    axs[1].set_title("Throughput Improvement Analysis")
     axs[1].legend()
-    
+
     plt.tight_layout()
     plt.savefig(output_path)
+    plt.close(fig)
+
 
 def main():
+    parser = argparse.ArgumentParser(description="Optimize throughput-latency trade-off using F_beta.")
+    parser.add_argument("--epsilon", type=float, default=0.2)
+    parser.add_argument("--l", type=float, default=5)
+    args = parser.parse_args()
+
     model = "opt-2.7b"
-    results_mean = extract_results(f'/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/benchmarks/definitive_results/background/{model}')
-    plot_results(results_mean, f'./plots_{model}.pdf')
+    results_mean = extract_results(
+        f'/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/benchmarks/definitive_results/background/{model}'
+    )
+
+    # Pass the user-specified beta to the plot function
+    plot_results(results_mean, f'./plots_{model}.pdf', args.epsilon, args.l)
+
 
 if __name__ == '__main__':
     main()
