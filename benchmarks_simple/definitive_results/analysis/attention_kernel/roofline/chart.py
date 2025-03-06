@@ -260,7 +260,7 @@ def plot_decode_timewise(
 
     # Create figure
     l = 300
-    fig, axs = plt.subplots(figsize=(6, 4), constrained_layout=True)
+    fig, axs = plt.subplots(figsize=(5.5, 3.5), constrained_layout=True)
 
     # Find intersection point
     intersection_x = peak_work_single_precision / peak_traffic  # Where y_compute = y_memory
@@ -306,11 +306,11 @@ def plot_decode_timewise(
         )
 
         if label == "FlashAttention kernel":
-            axs.text(x_line[1] * 1.25, y_line[1] * 0.9, 'MAX', color='black', fontsize=12)
+            axs.text(x_line[1] * 1.25, y_line[1] * 0.9, 'MAX', color='black', fontsize=10)
         elif label == "Matmul kernel":
-            axs.text(x_line[1] * 1, y_line[1] * 0.6, 'MAX', color='black', fontsize=12)
+            axs.text(x_line[1] * 1, y_line[1] * 0.6, 'MAX', color='black', fontsize=10)
         elif label == "Xformers kernel":
-            axs.text(x_line[1] * 0.4, y_line[1] * 1.1, 'MAX', color='black', fontsize=12)
+            axs.text(x_line[1] * 0.4, y_line[1] * 1.1, 'MAX', color='black', fontsize=10)
 
     # Set log scales
     axs.set_xscale('log')
@@ -323,10 +323,10 @@ def plot_decode_timewise(
     axs.set_ylim(0, y_max)
 
     # Label axes
-    axs.set_ylabel('Performance (Flop/s)', fontsize=16)
-    axs.set_xlabel('Arithmetic Intensity (FLOP/byte)', fontsize=16)
-    axs.text(0.15, peak_work_single_precision * 0.0008, 'Memory-bound', color='black', fontsize=11, fontweight='bold')
-    axs.text(intersection_x * 1.15, peak_work_single_precision * 0.0008, 'Compute-bound', color='black', fontsize=11, fontweight='bold')
+    axs.set_ylabel('Performance (Flop/s)', fontsize=12)
+    axs.set_xlabel('Arithmetic Intensity (FLOP/byte)', fontsize=12)
+    axs.text(0.15, peak_work_single_precision * 0.0008, 'Memory-bound', color='black', fontsize=10, fontweight='bold')
+    axs.text(intersection_x * 1.15, peak_work_single_precision * 0.0008, 'Compute-bound', color='black', fontsize=10, fontweight='bold')
 
     legend_handles = [
         Line2D([0], [0], color=color, marker=marker, markersize=10, linestyle='-', linewidth=3, label=label, markeredgewidth=1.5, markeredgecolor='black')
@@ -335,7 +335,7 @@ def plot_decode_timewise(
     legend_handles.append(Line2D([0], [0], color=colors[0], lw=4, linestyle='-', label='Single precision roofline'))
     legend_handles.append(Line2D([0], [0], color=colors[1], lw=4, linestyle='-', label='Memory bandwidth'))
 
-    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=11, bbox_to_anchor=(0.57, 1.2))
+    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=10, bbox_to_anchor=(0.57, 1.2))
 
     # Save as high-resolution vector graphic
     output_path = os.path.join(path, 'attention_kernel_roofline.pdf')

@@ -256,11 +256,11 @@ def plot_batch_size_evolution(
     plt.rcParams.update({
         'font.family': 'serif',
         'font.size': 13,
-        'axes.titlesize': 15,
-        'axes.labelsize': 15,
+        'axes.titlesize': 12,
+        'axes.labelsize': 12,
         'xtick.labelsize': 12,
         'ytick.labelsize': 12,
-        'legend.fontsize': 11,
+        'legend.fontsize': 12,
         'lines.linewidth': 2.0,
         'mathtext.default': 'regular',
         'axes.grid': True,
@@ -287,8 +287,9 @@ def plot_batch_size_evolution(
     light_colors = ['#66B2FF', '#FFCC80']  # Lighter shades for the max parts
 
     # Prepare figure
-    fig = plt.figure(figsize=(10, 8), constrained_layout=True, facecolor='white')
-    gs = gridspec.GridSpec(2, 2, height_ratios=[1, 2])
+    fig = plt.figure(figsize=(8.5, 6.5), facecolor='white')
+    gs = gridspec.GridSpec(2, 2, height_ratios=[1, 1.7])
+    plt.subplots_adjust(hspace=0.3)  # Increase space between top and bottom plots
 
     # Top subplot
     ax_top = fig.add_subplot(gs[1, :])
@@ -321,9 +322,9 @@ def plot_batch_size_evolution(
         ax_top.bar(index + i * bar_width, averages[metric], bar_width,
               label=f'{metrics_labels[i]}', edgecolor='black', color=metric_colors[i])
 
-    ax_top.set_ylabel('Usage Proportion (%)')
-    ax_top.set_ylim(0, 100)  # Set y-axis limit from 0 to 100
-    ax_top.set_xlabel('Average Batch Size (reqs)')
+    ax_top.set_ylabel('Usage Proportion (%)', fontsize=13)
+    ax_top.set_ylim(0, 102)  # Set y-axis limit from 0 to 100
+    ax_top.set_xlabel('Average Batch Size (reqs)', fontsize=13)
     ax_top.set_xticks(index + bar_width / 2)
     ax_top.set_xticklabels(batch_sizes)
     # ax_top.legend(loc='upper left', frameon=True)
@@ -336,12 +337,12 @@ def plot_batch_size_evolution(
             x_line = np.arange(len(y_line))
             ax.plot(x_line, y_line, linestyle=metrics_linestyles[metric_index],
                     color=metric_colors[metric_index], label=metrics_labels[metric_index])
-        ax.set_xlabel(f'Time (batch size = {batch_size})')
-        ax.set_ylabel('Usage Proportion (%)')
+        ax.set_xlabel(f'Time (batch size = {batch_size})', fontsize=13)
+        ax.set_ylabel('Usage Proportion (%)', fontsize=13)
         # if batch_size == 1:
         #     ax.legend(loc='upper left', frameon=False)
         ax.set_xlim(left=0)
-        ax.set_ylim(bottom=0)
+        ax.set_ylim(0,100)
         ax.grid(True, linestyle='--', linewidth=0.4, alpha=0.5)
 
     def max_pool1d_strided(input_array, kernel_len, stride):
@@ -368,8 +369,8 @@ def plot_batch_size_evolution(
     legend_handles.extend([mean_patch, max_patch])
 
     # Create figure legend
-    fig.legend(handles=legend_handles, loc='upper center', ncol=len(metrics) + 2, frameon=False, fontsize=12, bbox_to_anchor=(0.5, 0.95))
-    
+    fig.legend(handles=legend_handles, loc='upper center', ncol=len(metrics) + 2, frameon=False, fontsize=12, bbox_to_anchor=(0.5, 0.97))
+
     # Save plot
     output_path = os.path.join(path, 'decode_kernels_batch_size_evolution.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)

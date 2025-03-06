@@ -300,7 +300,7 @@ def plot_kv_cache(
         Line2D([0], [0], color=colors[i], marker=markers[i], markersize=8, linestyle='-', linewidth=3, label=model, markeredgewidth=1, markeredgecolor='black')
         for i, (model, x_line, y_line) in enumerate(sorted_results)
     ]
-    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=10, bbox_to_anchor=(0.57, 1.2))
+    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=9, bbox_to_anchor=(0.57, 1.2))
 
     # Save as high-resolution PDF
     output_path = os.path.join(path, 'background_kv_cache_plot.pdf')

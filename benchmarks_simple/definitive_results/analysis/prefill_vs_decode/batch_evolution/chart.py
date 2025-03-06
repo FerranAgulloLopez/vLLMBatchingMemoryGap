@@ -134,12 +134,12 @@ def plot_time_evolution(
     # Set plot style
     plt.rcParams.update({
         'font.family': 'serif',
-        'font.size': 11,
-        'axes.titlesize': 11,
-        'axes.labelsize': 11,
-        'xtick.labelsize': 11,
-        'ytick.labelsize': 11,
-        'legend.fontsize': 11,
+        'font.size': 10,
+        'axes.titlesize': 10,
+        'axes.labelsize': 10,
+        'xtick.labelsize': 9,
+        'ytick.labelsize': 9,
+        'legend.fontsize': 9,
         'lines.linewidth': 2.5,
         'mathtext.default': 'regular',
         'axes.grid': True,
@@ -149,7 +149,7 @@ def plot_time_evolution(
     })
 
     # Prepare plot
-    fig, ax = plt.subplots(figsize=(5.5, 3.5))
+    fig, ax = plt.subplots(figsize=(4.5, 2.5))
     ax.set_facecolor('white')
     colors = ['#0072B2', '#E69F00', '#009E73', '#D55E00']
 
@@ -173,18 +173,18 @@ def plot_time_evolution(
         spine.set_color('black')
         spine.set_linewidth(1.0)
     ax2.plot(prefill_x, slowdown_y, marker='o', color='#D55E00', label='Global Slowdown', linewidth=2.5)
-    ax2.set_ylabel('Global Slowdown', fontsize=11, color='black')
+    ax2.set_ylabel('Global Slowdown', fontsize=9, color='black')
     ax2.tick_params(axis='y', colors='black', width=1.5)
     ax2.grid(False)
     ax.grid(False)
     # ax.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.3)
     # ax2.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.3)
 
-    ax.set_xlabel('Average Batch Size (reqs)', fontsize=11, labelpad=10, color='black')
-    ax.set_ylabel('Time (s)', fontsize=11, labelpad=10, color='black')
+    ax.set_xlabel('Average Batch Size (reqs)', fontsize=9, labelpad=10, color='black')
+    ax.set_ylabel('Time (s)', fontsize=9, labelpad=10, color='black')
     
-    ax.legend(loc='upper left', frameon=False)
-    ax2.legend(loc='center left', frameon=False)
+    ax.legend(loc='upper left', frameon=False, fontsize=8)
+    ax2.legend(loc='center left', frameon=False, fontsize=8)
 
     # Save plot as high-resolution PDF
     output_path = 'prefill_decode_plot.pdf'

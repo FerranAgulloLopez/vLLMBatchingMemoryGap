@@ -321,7 +321,7 @@ def plot_decode_timewise(
         'DRAM Read Throughput'
     ]
 
-    fig = plt.figure(figsize=(8, 6), constrained_layout=True, facecolor='white')
+    fig = plt.figure(figsize=(7.5, 4.5), constrained_layout=True, facecolor='white')
     gs = GridSpec(2, 2, height_ratios=[1, 0.75], wspace=0.1, hspace=0.3)
 
     plt.rcParams.update({
@@ -369,8 +369,8 @@ def plot_decode_timewise(
         axs.set_xlim((x_line[0], x_line[-1]))
 
         if index_results == 0:
-            axs.set_ylabel('Usage proportion (%)', fontsize=13)
-            axs.legend(loc='center', bbox_to_anchor=(1, 1.2), fontsize=11)  # TODO refactor
+            axs.set_ylabel('Usage proportion (%)', fontsize=12)
+            axs.legend(loc='center', bbox_to_anchor=(1, 1.25), fontsize=11, frameon=False)  # TODO refactor
         else:
             axs.yaxis.set_ticklabels([])
 
@@ -405,11 +405,11 @@ def plot_decode_timewise(
         
 
         if index_results == 0:
-            axs.set_xlabel('Time - Batch size 1', fontsize=13)
-            axs.set_ylabel('Kernel timeline', fontsize=13)
+            axs.set_xlabel('Time - Batch size 1', fontsize=12)
+            axs.set_ylabel('Kernel timeline', fontsize=12)
         
         if index_results == 1:
-            axs.set_xlabel('Time - Batch size 160', fontsize=13)
+            axs.set_xlabel('Time - Batch size 160', fontsize=12)
 
         axs.set_ylim((1, 4))
         axs.set_xlim((start_time, end_time))
@@ -417,7 +417,7 @@ def plot_decode_timewise(
         axs.xaxis.set_ticklabels([])
         axs.yaxis.set_ticklabels([])
 
-    fig.legend(handles=list(legend_patches.values()), loc='upper center', ncol=2, fontsize=10, frameon=True, bbox_to_anchor=(0.5, 0.47))
+    fig.legend(handles=list(legend_patches.values()), loc='upper center', ncol=2, fontsize=10, frameon=False, bbox_to_anchor=(0.5, 0.47))
     output_path = os.path.join(path, 'decode_kernels_timewise.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
     
