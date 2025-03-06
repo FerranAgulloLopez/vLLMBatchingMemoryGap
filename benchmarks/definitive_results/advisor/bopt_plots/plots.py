@@ -122,7 +122,7 @@ def main():
     parser.add_argument("--l", type=float, default=5)
     args = parser.parse_args()
 
-    model = "opt-1.3b"
+    model = "opt-125m"
     results_mean = extract_results(
         f'/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/benchmarks/definitive_results/background/{model}'
     )
