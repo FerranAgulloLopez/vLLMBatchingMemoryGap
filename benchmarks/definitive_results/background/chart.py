@@ -5,6 +5,7 @@ import glob
 from typing import List, Tuple, Dict, Set
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
 
 
 def extract_experiment_metric(path: str) -> Dict[str, float]:
@@ -236,11 +237,11 @@ def plot_kv_cache(
     # Consistent plot settings
     plt.rcParams.update({
         'font.family': 'serif',
-        'font.size': 13,
-        'axes.titlesize': 13,
-        'axes.labelsize': 13,
-        'xtick.labelsize': 12,
-        'ytick.labelsize': 12,
+        'font.size': 11,
+        'axes.titlesize': 10,
+        'axes.labelsize': 10,
+        'xtick.labelsize': 10,
+        'ytick.labelsize': 10,
         'legend.fontsize': 10,
         'lines.linewidth': 2.0,
         'mathtext.default': 'regular',
@@ -262,7 +263,7 @@ def plot_kv_cache(
     sorted_results = sorted(all_model_results, key=lambda x: desired_order.index(x[0]))
 
     # Create plot
-    fig, ax = plt.subplots(figsize=(6, 4), constrained_layout=True, facecolor='white')
+    fig, ax = plt.subplots(figsize=(4.5, 2.5), constrained_layout=True, facecolor='white')
     ax.set_facecolor('white')
 
     # Ensure axis visibility
@@ -281,20 +282,25 @@ def plot_kv_cache(
             x_line,
             y_line,
             marker=marker,
-            markersize=6,
+            markersize=5,
             color=color,
             label=model,
-            edgecolor='black', 
             linewidth=1.5
         )
 
     # Axis labels and ticks
-    ax.set_xlabel('KV Cache Maximum Usage (%)', fontsize=12, labelpad=10)
-    ax.set_ylabel('Throughput (tokens/s)', fontsize=12, labelpad=10)
+    ax.set_xlabel('KV Cache Maximum Usage (%)', fontsize=10, labelpad=10)
+    ax.set_ylabel('Throughput (tokens/s)', fontsize=10, labelpad=10)
     ax.set_xlim(left=0)
     ax.set_ylim(bottom=0)
     ax.grid(True, linestyle='--', linewidth=0.4, alpha=0.5)
-    ax.legend(loc='upper right', frameon=False, bbox_to_anchor=(1, 0.95))
+    # ax.legend(loc='upper right', frameon=False, bbox_to_anchor=(1, 0.95))
+
+    legend_handles = [
+        Line2D([0], [0], color=colors[i], marker=markers[i], markersize=8, linestyle='-', linewidth=3, label=model, markeredgewidth=1, markeredgecolor='black')
+        for i, (model, x_line, y_line) in enumerate(sorted_results)
+    ]
+    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=10, bbox_to_anchor=(0.57, 1.2))
 
     # Save as high-resolution PDF
     output_path = os.path.join(path, 'background_kv_cache_plot.pdf')
