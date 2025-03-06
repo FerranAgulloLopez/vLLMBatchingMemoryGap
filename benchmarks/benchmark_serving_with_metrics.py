@@ -702,6 +702,15 @@ def main(args: argparse.Namespace):
     concurrent_metrics_checkers = []
     try:
         if args.launch_server:
+
+            # set up MPS if required
+            if args.multiple_servers > 1 and args.use_mps:
+                # assure not other mps daemons are running
+                subprocess.run('echo quit | nvidia-cuda-mps-control', shell=True)
+
+                # start daemon
+                subprocess.run('nvidia-cuda-mps-control -d', check=True, shell=True)
+
             # launch servers
             assert args.multiple_servers > 0
             gpu_memory_utilization = 0.9
@@ -837,6 +846,12 @@ def main(args: argparse.Namespace):
                 except Exception as e:
                     print(e)
             print('Servers terminated')
+
+        if args.multiple_servers > 1 and args.use_mps:
+            try:
+                subprocess.run('echo quit | nvidia-cuda-mps-control', check=True, shell=True)
+            except Exception as e:
+                print(e)
 
 
 if __name__ == "__main__":
@@ -1095,6 +1110,12 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="include nvtx regions to profile",
+    )
+    parser.add_argument(
+        "--use-mps",
+        action="store_true",
+        default=False,
+        help="use Nvidia MPS when replicating",
     )
 
     args = parser.parse_args()
