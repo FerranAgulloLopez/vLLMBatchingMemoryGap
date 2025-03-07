@@ -180,11 +180,12 @@ def plot_sequence_length(
     # define figure
     nrows = 1
     ncols = 2
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, layout='constrained', figsize=(8, 3.5), sharey=True, sharex=True)
+    bar_width = 0.7
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, layout='constrained', figsize=(7, 2.5), sharey=True, sharex=True)
 
     # plot figure
     for index_x, (label_results, x_line, y_line) in enumerate([('Prompt length', prompt_x_line, prompt_y_line), ('Output length', output_x_line, output_y_line)]):
-        axs[index_x].bar(x_line, y_line, color='#0072B2', edgecolor='black')
+        axs[index_x].bar(x_line, y_line, bar_width, color='#0072B2', edgecolor='black')
 
         # label stuff
         axs[index_x].set_xlabel(label_results, fontsize=12)

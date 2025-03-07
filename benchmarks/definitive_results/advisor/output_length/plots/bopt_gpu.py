@@ -5,6 +5,7 @@ from typing import List, Dict
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.lines import Line2D
 
 # Total memory available per GPU (64 GB)
 TOTAL_GPU_MEMORY = 64 * 1024  # In MB
@@ -85,22 +86,16 @@ def compute_optimal_batch_size(results: List[Dict[str, float]]) -> int:
     batch_sizes = np.array([r['batch_size'] for r in results])
     latencies = np.array([r['mean_tpot_ms'] for r in results])
 
-    relative_improvement_latency = np.diff(latencies) / latencies[:-1]
-    L_threshold = 0.20  # 5% increase threshold
-
-    # Compute relative throughput improvement
-    relative_improvement_throughput = np.diff(throughputs) / throughputs[:-1]
-    epsilon = 0.4  # Threshold for throughput improvement plateau
-
-    plateau_indices = np.where(
-        (relative_improvement_throughput < epsilon) & (relative_improvement_latency > L_threshold)
-    )[0]
-
-    # # Find the first batch size where improvement falls below the threshold
-    # plateau_indices = np.where(relative_improvement_throughput < epsilon)[0]
-
-    # Select the first batch size satisfying the condition
-    b_opt = batch_sizes[plateau_indices[0] + 1] if len(plateau_indices) > 0 else batch_sizes[-1]
+    L = 3
+    idx_32 = np.argmin(np.abs(batch_sizes - 32))
+    latency_32 = latencies[idx_32]
+    latency_threshold = L * latency_32  # Define the latency limit
+    epsilon = 0.3
+    dT_dB = np.diff(throughputs) / np.diff(batch_sizes)
+    plateau_indices = np.where(dT_dB < epsilon)[0]
+    valid_latency_indices = np.where(latencies <= latency_threshold)[0]
+    valid_indices = np.intersect1d(plateau_indices, valid_latency_indices)
+    b_opt = batch_sizes[np.max(valid_latency_indices)]  # Largest batch size within latency limit
 
     return b_opt
 
@@ -160,11 +155,11 @@ def plot_memory_usage(results_by_model: Dict[str, Dict[str, float]]):
 
     plt.rcParams.update({
         'font.family': 'serif',
-        'font.size': 13,
-        'axes.titlesize': 15,
-        'axes.labelsize': 15,
-        'xtick.labelsize': 15,
-        'ytick.labelsize': 15,
+        'font.size': 11,
+        'axes.titlesize': 11,
+        'axes.labelsize': 11,
+        'xtick.labelsize': 11,
+        'ytick.labelsize': 11,
         'legend.fontsize': 11,
         'lines.linewidth': 2.0,
         'mathtext.default': 'regular',
@@ -175,9 +170,10 @@ def plot_memory_usage(results_by_model: Dict[str, Dict[str, float]]):
     })
 
     colors_list = ['#0072B2', '#E69F00', '#009E73', '#D55E00']
+    markers = ['o', 's', 'D', '^']  # Example markers for legend
 
     bar_width = 0.6
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(4.5, 2.5))
 
     # Plot stacked bars
     ax.bar(models, model_weights, bar_width, label='Model Weights', color=colors_list[0], edgecolor='black')
@@ -189,15 +185,22 @@ def plot_memory_usage(results_by_model: Dict[str, Dict[str, float]]):
            label='Unused Memory', color=colors_list[3], edgecolor='black')
 
     ax.set_ylabel('Memory Usage (GB)')
-    ax.set_title('H100 64GB')
-    ax.legend(fontsize=12, loc='lower right')
     ax.set_ylim(0, 64)
     ax.tick_params(axis='x')
 
-    plt.tight_layout()
-    plt.savefig('gpu_memory_distribution_with_bopt_real_data.pdf')
-    plt.show()
+    # Create custom legend elements
+    legend_handles = [
+        Line2D([0], [0], color=colors_list[i], marker=markers[i], markersize=8, linestyle='-', linewidth=3, 
+               label=label, markeredgewidth=1, markeredgecolor='black')
+        for i, label in enumerate(['Model Weights', 'KV Cache', 'Extra KV Cache', 'Unused Memory'])
+    ]
 
+    # Move the legend outside of the plot
+    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=9, bbox_to_anchor=(0.55, 1.15))
+
+    plt.tight_layout()
+    plt.savefig('gpu_memory_distribution_with_bopt_real_data.pdf', bbox_inches='tight')
+    plt.show()
 
 
 def main():
