@@ -204,6 +204,14 @@ def show_table(
 ) -> None:
     # prepare data
 
+    # filter out configurations without results
+    new_all_model_results = []
+    for results in all_model_results:
+        if 'gpu_metrics_values' in results:
+            new_all_model_results.append(results)
+    all_model_results = new_all_model_results
+    del new_all_model_results
+
     # filter metrics
     metrics_to_show = {
         'Compute Warps in Flight [Throughput %]',

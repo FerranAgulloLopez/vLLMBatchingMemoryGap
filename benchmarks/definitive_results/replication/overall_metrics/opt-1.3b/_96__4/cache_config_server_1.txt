@@ -7,9 +7,6 @@ vllm:prompt_tokens_total{model_name="/gpfs/scratch/bsc98/bsc098069/llm_benchmark
 # HELP vllm:generation_tokens_total Number of generation tokens processed.
 # TYPE vllm:generation_tokens_total counter
 vllm:generation_tokens_total{model_name="/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b"} 0.0
-# HELP vllm:cache_config_info Information of the LLMEngine CacheConfig
-# TYPE vllm:cache_config_info gauge
-vllm:cache_config_info{block_size="16",cache_dtype="auto",cpu_offload_gb="0",enable_prefix_caching="False",gpu_memory_utilization="0.225",is_attention_free="False",num_cpu_blocks="1365",num_gpu_blocks="3707",num_gpu_blocks_override="None",sliding_window="None",swap_space_bytes="4294967296"} 1.0
 # HELP vllm:num_requests_running Number of requests currently running on GPU.
 # TYPE vllm:num_requests_running gauge
 vllm:num_requests_running{model_name="/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b"} 0.0
@@ -43,3 +40,6 @@ vllm:avg_prompt_throughput_toks_per_s{model_name="/gpfs/scratch/bsc98/bsc098069/
 # HELP vllm:avg_generation_throughput_toks_per_s Average generation throughput in tokens/s.
 # TYPE vllm:avg_generation_throughput_toks_per_s gauge
 vllm:avg_generation_throughput_toks_per_s{model_name="/gpfs/scratch/bsc98/bsc098069/llm_benchmarking/models/opt/opt-1.3b"} 0.0
+# HELP vllm:cache_config_info Information of the LLMEngine CacheConfig
+# TYPE vllm:cache_config_info gauge
+vllm:cache_config_info{block_size="16",cache_dtype="auto",cpu_offload_gb="0",enable_prefix_caching="False",gpu_memory_utilization="0.225",is_attention_free="False",num_cpu_blocks="1365",num_gpu_blocks="3770",num_gpu_blocks_override="None",sliding_window="None",swap_space_bytes="4294967296"} 1.0

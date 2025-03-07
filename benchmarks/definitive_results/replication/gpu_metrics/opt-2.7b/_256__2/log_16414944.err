@@ -1,0 +1,9 @@
+load SINGULARITY/3.11.5 (PATH)
+WARNING: CPU IP/backtrace sampling not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+WARNING: CPU context switch tracing not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+Cannot find MPS control daemon process
+slurmstepd: error: *** JOB 16414944 ON as04r1b15 CANCELLED AT 2025-03-06T18:55:05 ***

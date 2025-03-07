@@ -45,7 +45,8 @@ def extract_experiment_metric(path: str, replicas: int) -> Dict[str, float]:
     output['throughput'] = float(execution_summary['total_token_throughput'])
 
     # compute latency
-    output['latency'] = float(execution_summary['mean_itl_ms'])
+    output['iter_token_latency'] = float(execution_summary['mean_itl_ms'])
+    output['e2e_latency'] = float(execution_summary['median_ttft_ms']) + float(execution_summary['mean_itl_ms']) * (int(execution_summary['total_output_tokens']) / int(execution_summary['num_prompts']))
 
     # compute max KV cache utilization
     max_kv_cache_utilization: float = 0
@@ -82,7 +83,6 @@ def extract_results(path: str, model: str) -> List[Dict[str, Any]]:
                 error_message: str = f'WARNING! Error while extracting results -> {os.path.join(path, folder)}. '
                 error_message += 'Unknown error'
                 unknown_errors += 1
-                # print(error_message)
                 print(os.path.join(path, folder), e)
                 metrics = {}
             metrics['model'] = model
@@ -153,9 +153,12 @@ def show_table(
         return '{:.2f}'.format(value)
     for model, model_results in ordered_model_results.items():
         for results in model_results:
+            if not 'throughput' in results:
+                continue
             replicas = results['replicas']
             throughput = results['throughput']
-            latency = results['latency']
+            iter_token_latency = results['iter_token_latency']
+            e2e_latency = results['e2e_latency']
             kv_cache = results['kv_cache']
             batch_size = results['set_batch_size']
             chunked = results['chunked']
@@ -164,8 +167,9 @@ def show_table(
                 'batch_size', batch_size,
                 'chunked', chunked,
                 'replicas', replicas,
-                'throughput', print_metric_value(throughput),
-                'latency', print_metric_value(latency),
+                'throughput', print_metric_value(throughput / 1000),
+                'inter-token latency', print_metric_value(iter_token_latency),
+                'e2e latency', print_metric_value(e2e_latency / 1000),
                 'kv_cache', print_metric_value(kv_cache),
             )
 
