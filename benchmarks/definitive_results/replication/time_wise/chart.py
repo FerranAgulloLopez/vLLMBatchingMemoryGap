@@ -3,6 +3,7 @@ import re
 import glob
 import sqlite3
 import shlex
+import matplotlib.ticker as ticker
 import json
 import subprocess
 import pandas as pd
@@ -197,10 +198,12 @@ def plot_timewise(
     # prepare data
 
     # extract only kernels by replica information
-    kernel_data: Dict[int, List[List[Tuple[float, float]]]] = {}
+    kernel_data: Dict[str, List[List[Tuple[float, float]]]] = {}
     for model_results in all_model_results:
+        model = model_results['model']
         replicas = model_results['replicas']
-        kernel_data[replicas] = model_results['replica_kernel_times']
+        name = str(replicas) if not 'mps' in model else f'{replicas}_mps'
+        kernel_data[name] = model_results['replica_kernel_times']
     del all_model_results
 
     # normalize times to start counting from first kernel
@@ -212,50 +215,28 @@ def plot_timewise(
             for index in range(len(values)):
                 values[index] = (values[index][0] - first_time, values[index][1] - first_time)
 
-    # determine window to plot for each replica config
-    def find_maximum_replica_kernel_start_time(replica_kernels: List[Tuple[float, float]]):
-        return max([start_time for (start_time, _) in replica_kernels])
-    start_index_by_replica = {
-        1: min(
-            [find_minimum_replica_kernel_start_time(replica_kernels) for replica_kernels in kernel_data[1]]),
-        2: min(
-            [find_minimum_replica_kernel_start_time(replica_kernels) for replica_kernels in kernel_data[2]]),
-        4: min(
-            [find_minimum_replica_kernel_start_time(replica_kernels) for replica_kernels in kernel_data[4]]),
-    }
-    end_index_by_replica = {
-        1: max(
-            [find_maximum_replica_kernel_start_time(replica_kernels) for replica_kernels in kernel_data[1]]),
-        2: max(
-            [find_maximum_replica_kernel_start_time(replica_kernels) for replica_kernels in kernel_data[2]]),
-        4: max(
-            [find_maximum_replica_kernel_start_time(replica_kernels) for replica_kernels in kernel_data[4]]),
-    }
-    time_window_by_replica = {
-        1: (4202808886.5, (4202808886.5 + 26267555.540625)),
-        2: (4202808886.5, (4202808886.5 + 26267555.540625)),
-        4: (4202808886.5 , (4202808886.5 + 26267555.540625))
-    }
+    # determine window to plot
+    time_window = (4202808886.5, (4202808886.5 + 17073911.10140625))
 
     # filter kernels outside of the determined window
     for replica_label, replica_values in kernel_data.items():
         for index_values, values in enumerate(replica_values):
             kernel_data[replica_label][index_values] = __cut_kernels_by_time(
                 values,
-                time_window_by_replica[replica_label][0],
-                time_window_by_replica[replica_label][1]
+                time_window[0],
+                time_window[1]
             )
 
     # filter out experiment with 4 replicas
-    del kernel_data[4]
+    del kernel_data['4']
 
     # extract and order number of replica configs
-    replicas_labels = sorted(kernel_data.keys())
+    replicas_labels = ['1', '2', '2_mps']
 
     # define figure
     nrows = 1
-    ncols = 2
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(8, 3), constrained_layout=True, facecolor='white', sharey=True)
+    ncols = 3
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(8, 1.5), constrained_layout=True, facecolor='white', sharey=True)
 
     plt.rcParams.update({
         'font.family': 'serif',
@@ -289,10 +270,15 @@ def plot_timewise(
             for aux_index, (kernel_start, kernel_end) in enumerate(replica_values):
                 level_index = 3
                 print(len(replica_values) - aux_index)
+                if index_x in [1, 2]:
+                    if replica_index == 0:
+                        level_index = 2.85
+                    elif replica_index == 1:
+                        level_index = 3.25
                 rect = patches.FancyBboxPatch(
                     (kernel_start, level_index),
                     kernel_end - kernel_start,
-                    0.6,
+                    0.2,
                     boxstyle='round,pad=0.1',
                     edgecolor='black',
                     linewidth=0,
@@ -302,22 +288,25 @@ def plot_timewise(
 
         if index_x == 0:
             axs[index_x].set_ylabel('Kernel timeline')
-        elif index_x == 1:
-            axs[index_x].legend(handles=legend_patches, frameon=True)
+        #elif index_x in [1]:
+        #    axs[index_x].legend(handles=legend_patches, frameon=True, ncol=2, bbox_to_anchor=(0.5, 1.1), loc='upper center')
+        fig.legend(handles=legend_patches, frameon=True, ncol=2, bbox_to_anchor=(0.5, 1.2), loc='upper center')
 
-        axs[index_x].set_ylim(3 - 0.6, 3 + 1.2)
-        axs[index_x].set_xlim(time_window_by_replica[replica_label][0], time_window_by_replica[replica_label][1])
+        axs[index_x].set_ylim(3 - 0.4, 3 + 0.7)
+        axs[index_x].set_xlim(time_window[0], time_window[1])
         axs[index_x].yaxis.set_ticks([])
         axs[index_x].yaxis.set_ticklabels([])
 
-        import matplotlib.ticker as ticker
         def ns_to_sec(x, pos):
             return f"{x * 1e-6:.1f}"
         axs[index_x].xaxis.set_major_formatter(ticker.FuncFormatter(ns_to_sec))
+        axs[index_x].xaxis.set_major_locator(ticker.MultipleLocator(5000000))
         if index_x == 0:
-            axs[index_x].set_xlabel(f'Time (ms) - {replica_label} replica')
+            axs[index_x].set_xlabel(f'Time (ms) - No replication')
         elif index_x == 1:
-            axs[index_x].set_xlabel(f'Time (ms) - {replica_label} replicas')
+            axs[index_x].set_xlabel(f'Time (ms) - 2 replicas')
+        elif index_x == 2:
+            axs[index_x].set_xlabel(f'Time (ms) - 2 replicas with MPS')
     output_path = os.path.join(path, 'replication_timewise.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
 
@@ -325,7 +314,7 @@ def plot_timewise(
 
 def main():
     if CREATE_SQLITE_DATABASES:
-        for model in ['opt-1.3b']:
+        for model in ['opt-1.3b', 'opt-1.3b_mps']:
             create_sqlite_databases(model)
 
     model_results: List[Dict[str, Any]] = []
@@ -333,7 +322,7 @@ def main():
         with open(os.path.join(PICKLE_ROOT_PATH, 'replication_timewise'), 'rb') as file:
             model_results = pickle.load(file)
     else:
-        for model in ['opt-1.3b']:
+        for model in ['opt-1.3b', 'opt-1.3b_mps']:
             model_results += extract_results(model, model)
         with open(os.path.join(PICKLE_ROOT_PATH, 'replication_timewise'), 'wb') as file:
             pickle.dump(model_results, file)
