@@ -155,12 +155,12 @@ def plot_memory_usage(results_by_model: Dict[str, Dict[str, float]]):
 
     plt.rcParams.update({
         'font.family': 'serif',
-        'font.size': 11,
-        'axes.titlesize': 11,
-        'axes.labelsize': 11,
-        'xtick.labelsize': 11,
-        'ytick.labelsize': 11,
-        'legend.fontsize': 11,
+        'font.size':9,
+        'axes.titlesize': 9,
+        'axes.labelsize': 9,
+        'xtick.labelsize': 9,
+        'ytick.labelsize': 9,
+        'legend.fontsize': 9,
         'lines.linewidth': 2.0,
         'mathtext.default': 'regular',
         'axes.grid': True,
@@ -172,8 +172,8 @@ def plot_memory_usage(results_by_model: Dict[str, Dict[str, float]]):
     colors_list = ['#0072B2', '#E69F00', '#009E73', '#D55E00']
     markers = ['o', 's', 'D', '^']  # Example markers for legend
 
-    bar_width = 0.6
-    fig, ax = plt.subplots(figsize=(4.5, 2.5))
+    bar_width = 0.5
+    fig, ax = plt.subplots(figsize=(5, 2))
 
     # Plot stacked bars
     ax.bar(models, model_weights, bar_width, label='Model Weights', color=colors_list[0], edgecolor='black')
@@ -184,22 +184,23 @@ def plot_memory_usage(results_by_model: Dict[str, Dict[str, float]]):
            bottom=np.array(model_weights) + np.array(kv_cache_optimal) + np.array(kv_cache_extra),
            label='Unused Memory', color=colors_list[3], edgecolor='black')
 
-    ax.set_ylabel('Memory Usage (GB)')
+    ax.set_ylabel('Memory Usage (GB)', fontsize=10)
     ax.set_ylim(0, 64)
-    ax.tick_params(axis='x')
+    ax.tick_params(axis='x', labelsize=9)
+    ax.tick_params(axis='y', labelsize=9)
 
     # Create custom legend elements
     legend_handles = [
-        Line2D([0], [0], color=colors_list[i], marker=markers[i], markersize=8, linestyle='-', linewidth=3, 
+        Line2D([0], [0], color=colors_list[i], linestyle='-', linewidth=3, 
                label=label, markeredgewidth=1, markeredgecolor='black')
         for i, label in enumerate(['Model Weights', 'KV Cache', 'Extra KV Cache', 'Unused Memory'])
     ]
 
     # Move the legend outside of the plot
-    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=9, bbox_to_anchor=(0.55, 1.15))
+    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=9, bbox_to_anchor=(0.55, 1.2))
 
     plt.tight_layout()
-    plt.savefig('gpu_memory_distribution_with_bopt_real_data.pdf', bbox_inches='tight')
+    plt.savefig('gpu_memory_distribution_with_bopt_real_data.pdf', bbox_inches='tight', dpi=400)
     plt.show()
 
 

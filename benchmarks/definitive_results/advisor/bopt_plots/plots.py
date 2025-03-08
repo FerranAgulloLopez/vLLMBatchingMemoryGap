@@ -64,11 +64,12 @@ def plot_results(results: List[Dict[str, float]], output_path: str, epsilon: flo
 
     print(f"Latency at B=32: {latency_32:.2f} ms, Latency Threshold: {latency_threshold:.2f} ms")
 
-    dT_dB = np.diff(throughputs) / np.diff(batch_sizes)
-    plateau_indices = np.where(dT_dB < epsilon)[0]
+    # dT_dB = np.diff(throughputs) / np.diff(batch_sizes)
+    dT_dB = (throughputs[1:] - throughputs[:-1]) / throughputs[:-1]
+    plateau_indices = np.where(dT_dB > epsilon)[0] + 1 
     valid_latency_indices = np.where(latencies <= latency_threshold)[0]
     valid_indices = np.intersect1d(plateau_indices, valid_latency_indices)
-    B_opt = batch_sizes[np.max(valid_latency_indices)]  # Largest batch size within latency limit
+    B_opt = batch_sizes[np.max(valid_indices)]  # Largest batch size within latency limit
 
     print(f"Optimal Batch Size (B_opt): {B_opt}")
 
@@ -122,7 +123,7 @@ def main():
     parser.add_argument("--l", type=float, default=5)
     args = parser.parse_args()
 
-    model = "opt-125m"
+    model = "opt-1.3b"
     results_mean = extract_results(
         f'/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/benchmarks/definitive_results/background/{model}'
     )

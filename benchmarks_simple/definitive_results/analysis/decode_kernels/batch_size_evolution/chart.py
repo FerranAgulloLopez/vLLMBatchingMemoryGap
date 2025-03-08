@@ -362,8 +362,8 @@ def plot_batch_size_evolution(
     from matplotlib.patches import Patch
 
     legend_handles = [Line2D([0], [0], color=metric_colors[i], lw=7, label=metrics_labels[i]) for i in range(len(metrics))]
-    mean_patch = Patch(facecolor='gray', edgecolor='black', label='Mean')
-    max_patch = Patch(facecolor='gray', edgecolor='black', hatch='//', label='Max')
+    mean_patch = Patch(facecolor='white', edgecolor='black', label='Mean')
+    max_patch = Patch(facecolor='white', edgecolor='black', hatch='//', label='Max')
 
     # Extend legend handles
     legend_handles.extend([mean_patch, max_patch])

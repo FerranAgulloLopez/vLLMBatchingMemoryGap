@@ -196,6 +196,23 @@ def plot_timewise(
         path: str
 ) -> None:
     # prepare data
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 13,
+        'axes.titlesize': 13,
+        'axes.labelsize': 13,
+        'xtick.labelsize': 11,
+        'ytick.labelsize': 11,
+        'legend.fontsize': 12,
+        'lines.linewidth': 2.0,
+        'mathtext.default': 'regular',
+        'axes.grid': True,
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.4,
+        'figure.figsize': (7, 5)  # Consistent size for single plot
+    })
+
+    replica_colors = ['#348ABD', '#E24A33']
 
     # extract only kernels by replica information
     kernel_data: Dict[str, List[List[Tuple[float, float]]]] = {}
@@ -216,7 +233,7 @@ def plot_timewise(
                 values[index] = (values[index][0] - first_time, values[index][1] - first_time)
 
     # determine window to plot
-    time_window = (4202808886.5, (4202808886.5 + 17073911.10140625))
+    time_window = (4202808886.5, (4202808886.5 + 17073911.10140625/1.5))
 
     # filter kernels outside of the determined window
     for replica_label, replica_values in kernel_data.items():
@@ -236,25 +253,7 @@ def plot_timewise(
     # define figure
     nrows = 1
     ncols = 3
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(8, 1.5), constrained_layout=True, facecolor='white', sharey=True)
-
-    plt.rcParams.update({
-        'font.family': 'serif',
-        'font.size': 13,
-        'axes.titlesize': 13,
-        'axes.labelsize': 13,
-        'xtick.labelsize': 12,
-        'ytick.labelsize': 12,
-        'legend.fontsize': 10,
-        'lines.linewidth': 2.0,
-        'mathtext.default': 'regular',
-        'axes.grid': True,
-        'grid.linestyle': '--',
-        'grid.linewidth': 0.4,
-        'figure.figsize': (7, 5)  # Consistent size for single plot
-    })
-
-    replica_colors = ['#348ABD', '#E24A33']
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(6, 2), constrained_layout=True, facecolor='white', sharey=True)
 
     # plot
     for index_x, replica_label in enumerate(replicas_labels):
@@ -263,10 +262,11 @@ def plot_timewise(
         for replica_index, replica_values in enumerate(kernel_values):
             legend_label = ''
             if replica_index == 0:
-                legend_label = 'first replica'
+                legend_label = 'First replica'
             elif replica_index == 1:
-                legend_label = 'second replica'
-            legend_patches.append(patches.Patch(color=replica_colors[replica_index], label=legend_label, linewidth=0.1))
+                legend_label = 'Second replica'
+            if index_x == 1:
+                legend_patches.append(patches.Patch(color=replica_colors[replica_index], label=legend_label, linewidth=0.1))
             for aux_index, (kernel_start, kernel_end) in enumerate(replica_values):
                 level_index = 3
                 print(len(replica_values) - aux_index)
@@ -288,9 +288,8 @@ def plot_timewise(
 
         if index_x == 0:
             axs[index_x].set_ylabel('Kernel timeline')
-        #elif index_x in [1]:
-        #    axs[index_x].legend(handles=legend_patches, frameon=True, ncol=2, bbox_to_anchor=(0.5, 1.1), loc='upper center')
-        fig.legend(handles=legend_patches, frameon=True, ncol=2, bbox_to_anchor=(0.5, 1.2), loc='upper center')
+
+        fig.legend(handles=legend_patches, frameon=False, ncol=2, bbox_to_anchor=(0.5, 1.2), fontsize=12, loc='upper center')
 
         axs[index_x].set_ylim(3 - 0.4, 3 + 0.7)
         axs[index_x].set_xlim(time_window[0], time_window[1])
@@ -302,11 +301,12 @@ def plot_timewise(
         axs[index_x].xaxis.set_major_formatter(ticker.FuncFormatter(ns_to_sec))
         axs[index_x].xaxis.set_major_locator(ticker.MultipleLocator(5000000))
         if index_x == 0:
-            axs[index_x].set_xlabel(f'Time (ms) - No replication')
+            axs[index_x].set_xlabel(f'Time (ms) \n No replication')
         elif index_x == 1:
-            axs[index_x].set_xlabel(f'Time (ms) - 2 replicas')
+            axs[index_x].set_xlabel(f'Time (ms) \n 2 replicas')
         elif index_x == 2:
-            axs[index_x].set_xlabel(f'Time (ms) - 2 replicas with MPS')
+            axs[index_x].set_xlabel(f'Time (ms) \n 2 replicas (MPS)')
+
     output_path = os.path.join(path, 'replication_timewise.pdf')
     plt.savefig(output_path, format='pdf', bbox_inches='tight', dpi=400)
 
