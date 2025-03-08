@@ -64,9 +64,8 @@ def plot_results(results: List[Dict[str, float]], output_path: str, epsilon: flo
 
     print(f"Latency at B=32: {latency_32:.2f} ms, Latency Threshold: {latency_threshold:.2f} ms")
 
-    # dT_dB = np.diff(throughputs) / np.diff(batch_sizes)
-    dT_dB = (throughputs[1:] - throughputs[:-1]) / throughputs[:-1]
-    plateau_indices = np.where(dT_dB > epsilon)[0] + 1 
+    dT_dB = np.array([r['throughput'] for r in results]) / (np.array([r['batch_size'] for r in results])*throughputs[0])
+    plateau_indices = np.where(dT_dB > epsilon)[0]
     valid_latency_indices = np.where(latencies <= latency_threshold)[0]
     valid_indices = np.intersect1d(plateau_indices, valid_latency_indices)
     B_opt = batch_sizes[np.max(valid_indices)]  # Largest batch size within latency limit
@@ -104,12 +103,12 @@ def plot_results(results: List[Dict[str, float]], output_path: str, epsilon: flo
     axs[0].set_title("Throughput vs Latency Trade-off")
     axs[0].legend()
 
-    axs[1].plot(batch_sizes[:-1], dT_dB, 'ro-', color=colors_list[1])
+    axs[1].plot(batch_sizes, dT_dB, 'ro-', color=colors_list[1])
     axs[1].axvline(x=B_opt, linestyle='--', label=f"Optimal Batch: {B_opt}", color=colors_list[2])
     axs[1].axhline(y=epsilon, color=colors_list[3], linestyle="--", label=f"Threshold ε={epsilon}")
     axs[1].set_xlabel("Batch Size")
-    axs[1].set_ylabel("Throughput Gain per Batch")
-    axs[1].set_title("Throughput Improvement Analysis")
+    axs[1].set_ylabel("Throughput Gain")
+    axs[1].set_title("Throughput Gain per Batch Increase")
     axs[1].legend()
 
     plt.tight_layout()
