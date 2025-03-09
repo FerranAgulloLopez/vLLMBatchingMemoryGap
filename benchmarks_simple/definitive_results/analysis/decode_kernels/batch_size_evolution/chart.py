@@ -293,7 +293,7 @@ def plot_batch_size_evolution(
 
     # Top subplot
     ax_top = fig.add_subplot(gs[1, :])
-    batch_sizes = [1, 32, 64, 128, 256]
+    batch_sizes = [1, 32, 64, 128, 256, 512]
     bar_width = 0.35 # 0.35
     index = np.arange(len(batch_sizes))
 
