@@ -182,7 +182,7 @@ def plot_memory_usage(results_by_model: Dict[str, Dict[str, float]]):
            label='Extra KV Cache', color=colors_list[2], edgecolor='black')
     ax.bar(models, unused_memory, bar_width,
            bottom=np.array(model_weights) + np.array(kv_cache_optimal) + np.array(kv_cache_extra),
-           label='Unused Memory', color=colors_list[3], edgecolor='black')
+           label='Other', color=colors_list[3], edgecolor='black')
 
     ax.set_ylabel('Memory Usage (GB)', fontsize=10)
     ax.set_ylim(0, 64)
@@ -193,7 +193,7 @@ def plot_memory_usage(results_by_model: Dict[str, Dict[str, float]]):
     legend_handles = [
         Line2D([0], [0], color=colors_list[i], linestyle='-', linewidth=3, 
                label=label, markeredgewidth=1, markeredgecolor='black')
-        for i, label in enumerate(['Model Weights', 'KV Cache', 'Extra KV Cache', 'Unused Memory'])
+        for i, label in enumerate(['Model Weights', 'KV Cache', 'Extra KV Cache', 'Other'])
     ]
 
     # Move the legend outside of the plot

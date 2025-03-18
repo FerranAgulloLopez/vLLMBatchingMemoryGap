@@ -85,7 +85,7 @@ def plot_results(results_by_model: Dict[str, Dict[int, List[Dict[str, float]]]],
         'figure.figsize': (7, 5)  # Consistent size for single plot
     })
     colors_list = ['#0072B2', '#E69F00', '#009E73', '#D55E00']
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8), sharex=True, sharey=True)
+    fig, axes = plt.subplots(2, 2, figsize=(10, 6), sharex=True, sharey=True)
     axes = axes.flatten()
 
     # Ensure axis limits are consistent across all subplots
@@ -102,7 +102,7 @@ def plot_results(results_by_model: Dict[str, Dict[int, List[Dict[str, float]]]],
     a = 0
     for ax, (model, results_by_output_len) in zip(axes, results_by_model.items()):
         i = 0
-        ax.set_title(f'{model}')
+        ax.set_title(f'{model}', fontsize=22)
         for output_len, results in results_by_output_len.items():
             batch_sizes = [r['gpu_cache_usage_perc']*100 for r in results]
             throughputs = [r['total_token_throughput'] for r in results]
@@ -110,7 +110,6 @@ def plot_results(results_by_model: Dict[str, Dict[int, List[Dict[str, float]]]],
             # Sort by batch size for a smooth curve
             sorted_indices = np.argsort(batch_sizes)
             batch_sizes = np.array(batch_sizes)[sorted_indices]
-            print(batch_sizes)
             throughputs = np.array(throughputs)[sorted_indices]
 
             ax.plot(batch_sizes, throughputs, marker='o', linestyle='solid',
@@ -118,21 +117,23 @@ def plot_results(results_by_model: Dict[str, Dict[int, List[Dict[str, float]]]],
             i += 1
 
         if a == 2 or a == 3:
-            ax.set_xlabel('GPU cache usage [%]')
+            ax.set_xlabel('GPU cache usage [%]', fontsize=19)
 
         if a == 0 or a == 2:
-            ax.set_ylabel('Throughput (token/s)')
-        # ax.set_xlim(x_min, x_max)
-        # ax.set_ylim(y_min, y_max)
+            ax.set_ylabel('Throughput (tok/s)', fontsize=19)
         ax.set_xlim(0,101)
         ax.set_ylim(bottom=0)
-        ax.legend(fontsize=14)
         ax.tick_params(axis='both', which='major')
-        # ax.grid(True)
         a += 1
 
+    output_lengths = ["130 tokens", "260 tokens", "390 tokens", "520 tokens"]
+    legend_handles = [
+        Line2D([0], [0], color=colors_list[i], markersize=10, linestyle='-', linewidth=5, label=model, markeredgewidth=1, markeredgecolor='black')
+        for i, model in enumerate(output_lengths)
+    ]
+    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=18, bbox_to_anchor=(0.57, 1.13))
+
     plt.tight_layout()
-    # plt.suptitle('', fontsize=20, y=1.02)
     plt.savefig(os.path.join(path, 'throughput_comparison_all_models.pdf'), format='pdf', bbox_inches='tight')
     plt.show()
 

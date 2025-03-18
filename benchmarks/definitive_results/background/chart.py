@@ -200,7 +200,8 @@ def plot_throughput_latency(
                 marker=marker,
                 markersize=6,
                 color=color,
-                label=model
+                label=model,
+                linewidth=2.5,  # Increased line width
             )[0]
 
             # Extend dotted line if needed
@@ -217,12 +218,18 @@ def plot_throughput_latency(
                 )
 
         # Axis labels and limits
-        ax.set_ylabel(col_labels[idx], labelpad=10)
-        ax.set_xlabel('Average Batch Size (reqs)', labelpad=10)
+        ax.set_ylabel(col_labels[idx], labelpad=10, fontsize=24)
+        ax.set_xlabel('Average Batch Size (reqs)', fontsize=24, labelpad=10)
         ax.set_xlim(left=0)
         ax.set_ylim(bottom=0)
+        ax.tick_params(axis='both', which='major', labelsize=15)
         ax.grid(True, linestyle='--', linewidth=0.4, alpha=0.5)
-        ax.legend(loc='lower right', frameon=False)
+
+    legend_handles = [
+        Line2D([0], [0], color=colors[i], marker=markers[i], markersize=10, linestyle='-', linewidth=3, label=model, markeredgewidth=1, markeredgecolor='black')
+        for i, (model, x_line, y_line) in enumerate(cols[0])
+    ]
+    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=22, bbox_to_anchor=(0.57, 1.25))
 
     # Save as high-resolution PDF
     output_path = os.path.join(path, 'background_throughput_latency.pdf')
@@ -289,8 +296,8 @@ def plot_kv_cache(
         )
 
     # Axis labels and ticks
-    ax.set_xlabel('KV Cache Maximum Usage (%)', fontsize=10, labelpad=10)
-    ax.set_ylabel('Throughput (tokens/s)', fontsize=10, labelpad=10)
+    ax.set_xlabel('KV Cache Maximum Usage (%)', fontsize=13, labelpad=10)
+    ax.set_ylabel('Throughput (tokens/s)', fontsize=13, labelpad=10)
     ax.set_xlim(left=0)
     ax.set_ylim(bottom=0)
     ax.grid(True, linestyle='--', linewidth=0.4, alpha=0.5)
@@ -300,7 +307,7 @@ def plot_kv_cache(
         Line2D([0], [0], color=colors[i], marker=markers[i], markersize=8, linestyle='-', linewidth=3, label=model, markeredgewidth=1, markeredgecolor='black')
         for i, (model, x_line, y_line) in enumerate(sorted_results)
     ]
-    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=9, bbox_to_anchor=(0.57, 1.2))
+    fig.legend(handles=legend_handles, loc='upper center', ncol=2, frameon=False, fontsize=12, bbox_to_anchor=(0.57, 1.22))
 
     # Save as high-resolution PDF
     output_path = os.path.join(path, 'background_kv_cache_plot.pdf')
