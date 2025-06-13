@@ -9,7 +9,6 @@ The sections below detail:
 - The structure of the modified repository
 - The required steps for setting up the environment
 - The required steps to run the experiments
-- Guidance on how to interpret and utilize the experiment outcomes
 
 ### Code changes
 This repository includes modifications only to the benchmarking components of the serving system. The core server part remains unchanged. We work in two benchmark modes following the available code in the vLLM respository, each located in a separate directory:
@@ -72,7 +71,7 @@ Each directory containing experiment results follows a consistent structure to e
 Note: Nsight Systems and Nsight Compute traces are not included in the repository due to their large size. However, all experiments can be easily reproduced by executing the corresponding commands found in the .txt config files.
 
 ### How to set up
-We show how to reproduce the experiments that appear in the paper, where we use Singularity and Slurm, which must be installed prior to execution. Nevertheless, as the original vLLM code, everything can also be run with docker or plainly with Python. Follows the required steps:
+We show how to reproduce the experiments that appear in the paper, where we use Singularity and Slurm, which must be installed prior to execution. Nevertheless, as the original vLLM code, everything can also be run with docker or plainly with Python. Follow the required steps:
 - Create the base Docker image as the foundation for the Singularity image: `docker build -f Dockerfile -t vllm .`
 - Create the Singularity image. If willing to use both online and offline modes, it is recommended to use the definition file found in the _benchmarks_simple_ deployment directory as appears in the following commands:
   - Default: `sudo singularity build vllm-benchmark-default.sif benchmarks_simple/deployment/slurm/SingularityBenchmark.def`
