@@ -1,0 +1,12 @@
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.29it/s]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:30<00:00, 17.78s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:30<00:00, 15.23s/it]
+
+INFO:     Started server process [41252]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on socket ('0.0.0.0', 2776) (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.

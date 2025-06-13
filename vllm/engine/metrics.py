@@ -184,6 +184,17 @@ class Metrics:
             multiprocess_mode="sum",
         )
 
+        # Time counters
+        self.gauge_scheduler_total_time = self._gauge_cls(
+            name="vllm:scheduler_total_time",
+            documentation="Total time spent in scheduler",
+            labelnames=labelnames,
+            multiprocess_mode="sum")
+        self.gauge_model_forward_total_time = self._gauge_cls(
+            name="vllm:model_forward_total_time",
+            documentation="Total time spent in model forward",
+            labelnames=labelnames,
+            multiprocess_mode="sum")
 
 # end-metrics-definitions
 
@@ -471,6 +482,12 @@ class PrometheusStatLogger(StatLoggerBase):
             self.metrics.histogram_num_generation_tokens_request,
             stats.num_generation_tokens_requests)
         self._log_histogram(self.metrics.histogram_n_request, stats.n_requests)
+
+        # Time counters
+        self._log_gauge(self.metrics.gauge_scheduler_total_time,
+                        stats.scheduler_total_time)
+        self._log_gauge(self.metrics.gauge_model_forward_total_time,
+                        stats.model_forward_total_time)
 
     def _log_prometheus_interval(self, prompt_throughput: float,
                                  generation_throughput: float) -> None:

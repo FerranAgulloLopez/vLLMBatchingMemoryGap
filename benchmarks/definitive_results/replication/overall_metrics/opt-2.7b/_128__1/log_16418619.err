@@ -1,0 +1,7 @@
+load SINGULARITY/3.11.5 (PATH)
+Traceback (most recent call last):
+  File "/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/benchmarks/benchmark_serving_with_metrics.py", line 1122, in <module>
+    main(args)
+  File "/home/bsc/bsc098069/llm_benchmarking/vLLMServingPlateau/benchmarks/benchmark_serving_with_metrics.py", line 742, in main
+    raise Exception("At least one server did not start on time")
+Exception: At least one server did not start on time

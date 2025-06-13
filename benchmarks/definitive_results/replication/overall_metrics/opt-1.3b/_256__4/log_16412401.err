@@ -1,0 +1,3 @@
+load SINGULARITY/3.11.5 (PATH)
+Cannot find MPS control daemon process
+slurmstepd: error: *** JOB 16412401 ON as01r1b15 CANCELLED AT 2025-03-06T18:13:05 ***

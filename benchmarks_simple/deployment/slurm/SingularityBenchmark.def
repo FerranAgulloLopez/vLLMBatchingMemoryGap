@@ -1,0 +1,5 @@
+Bootstrap: docker-daemon
+From: vllm:latest
+
+%post
+    export DEBIAN_FRONTEND=noninteractive

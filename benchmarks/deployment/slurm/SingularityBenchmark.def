@@ -1,0 +1,13 @@
+Bootstrap: docker-daemon
+From: vllm:latest
+%files
+    ./benchmarks/deployment/slurm/additional-requirements-benchmark.txt /additional-requirements-benchmark.txt
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install python packages
+    python3 -m pip install -r /additional-requirements-benchmark.txt
+
+    # Clean
+    rm /additional-requirements-benchmark.txt

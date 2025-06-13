@@ -1,0 +1,2 @@
+WARNING 03-06 18:09:54 _custom_ops.py:19] Failed to import from vllm._C with ModuleNotFoundError("No module named 'vllm._C'")
+Warning: Failed writing log files to directory [/var/log/nvidia-mps]. No logs will be available.

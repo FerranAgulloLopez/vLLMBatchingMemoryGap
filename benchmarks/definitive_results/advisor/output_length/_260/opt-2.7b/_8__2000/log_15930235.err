@@ -1,0 +1,10 @@
+load SINGULARITY/3.11.5 (PATH)
+/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/vllm/connections.py:8: RuntimeWarning: Failed to read commit hash:
+No module named 'vllm._version'
+  from vllm.version import __version__ as VLLM_VERSION
+Traceback (most recent call last):
+  File "/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/online_results/benchmark_serving_with_metrics.py", line 1079, in <module>
+    main(args)
+  File "/gpfs/scratch/bsc98/bsc098949/vLLMServingPlateau/online_results/benchmark_serving_with_metrics.py", line 733, in main
+    raise Exception("Server did not start on time")
+Exception: Server did not start on time

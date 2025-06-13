@@ -1,0 +1,6 @@
+load SINGULARITY/3.11.5 (PATH)
+huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
+To disable this warning, you can either:
+	- Avoid using `tokenizers` before the fork if possible
+	- Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)
+slurmstepd: error: *** JOB 15794657 ON as03r3b29 CANCELLED AT 2025-02-18T19:22:01 DUE TO TIME LIMIT ***
